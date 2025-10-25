@@ -107,22 +107,43 @@ end
 function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   -- Clear existing frames
   for _, frame in pairs(self.PortfolioFrames) do
-    frame:Hide()
-    frame:SetParent(nil)
+    if frame and frame:IsValid() then
+      frame:Hide()
+      frame:SetParent(nil)
+      frame:ClearAllPoints()
+    end
   end
   self.PortfolioFrames = {}
   
   local portfolios = Journalator.InvestONator.GetAllPortfolios()
   local yOffset = 0
   
+  -- Handle empty state
+  if not portfolios or next(portfolios) == nil then
+    if not self.EmptyStateText then
+      self.EmptyStateText = self.Content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      self.EmptyStateText:SetPoint("CENTER", self.Content, "CENTER")
+      self.EmptyStateText:SetText("No portfolios found. Create one to get started!")
+    end
+    self.EmptyStateText:Show()
+    self.Content:SetHeight(100)
+    return
+  else
+    if self.EmptyStateText then
+      self.EmptyStateText:Hide()
+    end
+  end
+  
   for portfolioId, portfolio in pairs(portfolios) do
     local frame = self:CreatePortfolioFrame(portfolioId, portfolio)
-    frame:SetPoint("TOPLEFT", self.Content, "TOPLEFT", 0, -yOffset)
-    yOffset = yOffset + frame:GetHeight() + 10
+    if frame then
+      frame:SetPoint("TOPLEFT", self.Content, "TOPLEFT", 0, -yOffset)
+      yOffset = yOffset + frame:GetHeight() + 10
+    end
   end
   
   -- Update content height
-  self.Content:SetHeight(yOffset)
+  self.Content:SetHeight(math.max(yOffset, 100))
   
   -- Show create button if no portfolios exist
   if not self.CreateButton then
@@ -131,7 +152,9 @@ function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
     self.CreateButton:SetPoint("TOPLEFT", 20, -20)
     self.CreateButton:SetText(JOURNALATOR_L_CREATE_PORTFOLIO)
     self.CreateButton:SetScript("OnClick", function()
-      self.CreateDialog:Show()
+      if self.CreateDialog then
+        self.CreateDialog:Show()
+      end
     end)
   end
 end
@@ -139,13 +162,27 @@ end
 ---Create a frame for displaying a portfolio
 ---@param portfolioId number The ID of the portfolio
 ---@param portfolio PortfolioData The portfolio data
+<<<<<<< HEAD
 -- Creates a UI frame that represents a portfolio, including its header, progress summary, a list of up to five items, and action buttons.
 -- The created frame is added to the mixin's PortfolioFrames list and has its `PortfolioId` field set.
 -- @param portfolioId number The identifier of the portfolio to display.
 -- @param portfolio table The portfolio data (expected fields: `name`, `items`).
 -- @return Frame The created portfolio frame with `PortfolioId` set and appended to `self.PortfolioFrames`.
+=======
+---@return Frame|nil frame The created portfolio frame, or nil if creation failed
+>>>>>>> cb84b01 (Auto-commit pending changes before rebase - PR synchronize)
 function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portfolioId, portfolio)
+  if not portfolioId or not portfolio then
+    Journalator.Debug.Message("InvestONator: Invalid portfolio data for frame creation")
+    return nil
+  end
+  
   local frame = CreateFrame("Frame", nil, self.Content)
+  if not frame then
+    Journalator.Debug.Message("InvestONator: Failed to create portfolio frame")
+    return nil
+  end
+  
   frame:SetSize(self.Content:GetWidth() - 40, 200)
   
   -- Portfolio header

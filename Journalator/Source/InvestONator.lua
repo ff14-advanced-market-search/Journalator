@@ -144,11 +144,19 @@ end
 -- @return `true` if the purchase was recorded successfully, `false` otherwise.
 function Journalator.InvestONator.RecordPurchase(portfolioId, itemId, amount, price, quantity)
   if not JOURNALATOR_INVEST_O_NATOR_DATA.portfolios[portfolioId] then
+    Journalator.Debug.Message("InvestONator: Portfolio " .. tostring(portfolioId) .. " not found")
     return false
   end
   
   local portfolio = JOURNALATOR_INVEST_O_NATOR_DATA.portfolios[portfolioId]
   if not portfolio.items[itemId] then
+    Journalator.Debug.Message("InvestONator: Item " .. tostring(itemId) .. " not found in portfolio " .. tostring(portfolioId))
+    return false
+  end
+  
+  -- Validate input parameters
+  if not amount or not price or not quantity or amount <= 0 or price <= 0 or quantity <= 0 then
+    Journalator.Debug.Message("InvestONator: Invalid purchase parameters")
     return false
   end
   
@@ -163,8 +171,13 @@ function Journalator.InvestONator.RecordPurchase(portfolioId, itemId, amount, pr
     quantity = quantity
   })
   
-  -- Update amounts
-  item.purchasedAmount = item.purchasedAmount + amount
+  -- Update amounts with validation
+  local newPurchasedAmount = item.purchasedAmount + amount
+  if newPurchasedAmount > item.targetAmount then
+    Journalator.Debug.Message("InvestONator: Purchase exceeds target amount for item " .. tostring(itemId))
+  end
+  
+  item.purchasedAmount = newPurchasedAmount
   item.remainingAmount = math.max(0, item.targetAmount - item.purchasedAmount)
   item.lastPurchaseTime = purchaseTime
   

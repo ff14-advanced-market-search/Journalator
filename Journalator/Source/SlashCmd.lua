@@ -69,7 +69,7 @@ end
 -- Unrecognized subcommands cause the function to emit the invest usage/help messages.
 function Journalator.SlashCmd.InvestONator(...)
   local command = select(1, ...)
-  
+
   if command == "create" then
     local name = select(2, ...)
     local investment = select(3, ...)
@@ -80,16 +80,17 @@ function Journalator.SlashCmd.InvestONator(...)
       Journalator.Utilities.Message("Gold formats: 100g, 10000s, 1000000c, or plain numbers")
       return
     end
-    
+
     local investmentAmount = Journalator.InvestONator.ParseGoldInput(investment)
     if investmentAmount <= 0 then
       Journalator.Utilities.Message("Invalid investment amount. Use formats like 100g, 10000s, or 1000000c")
       return
     end
-    
+
     local portfolioId = Journalator.InvestONator.CreatePortfolio(name, investmentAmount)
     if portfolioId then
-      Journalator.Utilities.Message("Created portfolio '" .. name .. "' with " .. Journalator.InvestONator.FormatGold(investmentAmount) .. " investment")
+      local formattedAmount = Journalator.InvestONator.FormatGold(investmentAmount)
+      Journalator.Utilities.Message("Created portfolio '" .. name .. "' with " .. formattedAmount .. " investment")
     else
       Journalator.Utilities.Message("Failed to create portfolio. Check your input.")
     end
@@ -98,24 +99,33 @@ function Journalator.SlashCmd.InvestONator(...)
     local portfolioId = tonumber(select(2, ...))
     local itemName = select(3, ...)
     local amount = select(4, ...)
-    
+
     if not portfolioId or not itemName or not amount then
       Journalator.Utilities.Message("Usage: /jnr invest add <portfolioId> <itemName> <amount>")
+      Journalator.Utilities.Message("Example: /jnr invest add 1 \"Iron Ore\" 100000")
       return
     end
-    
+
     local amountValue = Journalator.InvestONator.ParseGoldInput(amount)
     if amountValue <= 0 then
-      Journalator.Utilities.Message("Invalid amount")
+      Journalator.Utilities.Message("Invalid amount. Use formats like 100g, 10000s, or 1000000c")
       return
     end
-    
+
+    -- Check if portfolio exists
+    if not Journalator.InvestONator.GetPortfolio(portfolioId) then
+      local message = "Portfolio " .. portfolioId .. " not found. Use '/jnr invest list' to see available portfolios."
+      Journalator.Utilities.Message(message)
+      return
+    end
+
     -- Get item ID from name (simplified - would need better item lookup)
     local itemId = 0 -- This would need proper item ID lookup
     if Journalator.InvestONator.AddItemToPortfolio(portfolioId, itemId, itemName, amountValue) then
-      Journalator.Utilities.Message("Added " .. itemName .. " with " .. Journalator.InvestONator.FormatGold(amountValue) .. " target to portfolio")
+      local formattedAmount = Journalator.InvestONator.FormatGold(amountValue)
+      Journalator.Utilities.Message("Added " .. itemName .. " with " .. formattedAmount .. " target to portfolio")
     else
-      Journalator.Utilities.Message("Failed to add item to portfolio")
+      Journalator.Utilities.Message("Failed to add item to portfolio. Check your input.")
     end
     
   elseif command == "list" then
@@ -124,17 +134,20 @@ function Journalator.SlashCmd.InvestONator(...)
       Journalator.Utilities.Message("No portfolios found")
       return
     end
-    
+
     Journalator.Utilities.Message("Portfolios:")
     for portfolioId, portfolio in pairs(portfolios) do
       local progress = Journalator.InvestONator.GetPortfolioProgress(portfolioId)
+      local spentFormatted = Journalator.InvestONator.FormatGold(progress.totalSpent)
+      local targetFormatted = Journalator.InvestONator.FormatGold(progress.totalTarget)
+      local completionPercent = math.floor(progress.completionPercentage)
       Journalator.Utilities.Message(string.format(
         "%d. %s - %s / %s (%d%%)",
         portfolioId,
         portfolio.name,
-        Journalator.InvestONator.FormatGold(progress.totalSpent),
-        Journalator.InvestONator.FormatGold(progress.totalTarget),
-        math.floor(progress.completionPercentage)
+        spentFormatted,
+        targetFormatted,
+        completionPercent
       ))
     end
     

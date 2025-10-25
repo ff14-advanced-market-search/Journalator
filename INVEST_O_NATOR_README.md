@@ -85,4 +85,4 @@ The feature can be enabled/disabled via the Journalator configuration:
 - Import/export portfolio data
 - Advanced filtering and sorting
 - Investment analytics and reporting
-- Integration with other addons
+- Integration with other add-ons
