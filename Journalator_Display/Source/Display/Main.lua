@@ -228,6 +228,11 @@ function JournalatorDisplayMixin:HideTabs()
 
   self.TradesTab:SetShown(Journalator.Config.Get(Journalator.Config.Options.MONITOR_TRADES))
 
+  -- Investing tab visibility
+  if self.InvestingTab then
+    self.InvestingTab:SetShown(Journalator.Config.Get(Journalator.Config.Options.SHOW_INVESTING))
+  end
+
   self.Tabs = tFilter(self.Tabs, function(tab) return tab:IsShown() end, true)
 
   local lastTab = nil

@@ -4,6 +4,7 @@
   <Script file="Constants.lua" />
   <Script file="Events.lua" />
   <Script file="Utilities.lua" />
+  <Script file="Investing.lua" />
   <Script file="API.lua" />
 
   <Script file="Initialize.lua" />

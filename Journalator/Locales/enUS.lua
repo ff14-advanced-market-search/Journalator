@@ -18,6 +18,15 @@ JOURNALATOR_LOCALES.enUS = function()
   L["TRADES_TITLE"] = "Journalator - Trades"
   L["INFO_TITLE"] = "Journalator - Info"
 
+  -- Investing
+  L["INVESTING_TITLE"] = "Journalator - Investing"
+  L["INVESTING"] = "Investing"
+  L["GROUP"] = "Group"
+  L["BUDGET"] = "Budget"
+  L["SPENT"] = "Spent"
+  L["REMAINING"] = "Remaining"
+  L["PER_ITEM_BUDGET"] = "Per-Item Budget"
+
   L["SUMMARY"] = "Summary"
   L["INVOICES"] = "Invoices"
   L["POSTING"] = "Posting"

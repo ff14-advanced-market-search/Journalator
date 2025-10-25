@@ -26,4 +26,5 @@
   <Script file="BasicMailReceived.lua" />
   <Script file="Trades.lua" />
   <Script file="TrainingCosts.lua" />
+  <Script file="Investing.lua" />
 </Ui>

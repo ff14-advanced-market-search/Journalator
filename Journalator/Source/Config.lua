@@ -22,6 +22,10 @@ Journalator.Config.Options = {
   MONITOR_TRADES = "monitor_trades",
   MONITOR_MISSION_TABLES = "monitor_mission_tables",
 
+  -- Investing feature
+  SHOW_INVESTING = "show_investing",
+  INVESTING_GROUPS = "investing_groups",
+
   DEFAULT_TAB = "default_tab_4",
   DEFAULT_TIME_PERIOD = "default_time_period",
 
@@ -50,6 +54,8 @@ Journalator.Config.Defaults = {
   [Journalator.Config.Options.MONITOR_BASIC_MAIL] = true,
   [Journalator.Config.Options.MONITOR_TRADES] = true,
   [Journalator.Config.Options.MONITOR_MISSION_TABLES] = true,
+  [Journalator.Config.Options.SHOW_INVESTING] = true,
+  [Journalator.Config.Options.INVESTING_GROUPS] = {},
   [Journalator.Config.Options.DEFAULT_TAB] = {root = "Summary", child = ""},
   [Journalator.Config.Options.DEFAULT_TIME_PERIOD] = Journalator.Constants.TimePeriods.Month,
   [Journalator.Config.Options.IGNORE_TRANSFERS] = {--[[{character = "Me", realm="My Realm"}]]},

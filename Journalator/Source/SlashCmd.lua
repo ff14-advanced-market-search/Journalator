@@ -62,6 +62,86 @@ local COMMANDS = {
   ["config"] = Journalator.SlashCmd.Config,
   ["d"] = Journalator.SlashCmd.Debug,
   ["debug"] = Journalator.SlashCmd.Debug,
+  ["invest"] = function(sub, ...)
+    local cmd = sub or ""
+    if cmd == "" or cmd == "help" then
+      Journalator.Utilities.Message("Invest commands: create <name> <perItemBudget>, delete <name>, addids <name> <id,id,...>, addnames <name> <name|name|...>, setbudget <name> <amount>, list")
+      return
+    end
+
+    if cmd == "create" then
+      local name = ...
+      local budgetText
+      if select("#", ...) >= 2 then
+        local arr = {...}
+        name = arr[1]
+        budgetText = arr[2]
+      end
+      if not name then
+        Journalator.Utilities.Message("Usage: /jnr invest create <name> <perItemBudget>")
+        return
+      end
+      local copper = Journalator.Investing.ParseMoney(budgetText or "0")
+      Journalator.Investing.CreateGroup(name, copper)
+      return
+    end
+
+    if cmd == "delete" then
+      local name = ...
+      if not name then
+        Journalator.Utilities.Message("Usage: /jnr invest delete <name>")
+        return
+      end
+      Journalator.Investing.DeleteGroup(name)
+      return
+    end
+
+    if cmd == "addids" then
+      local name, idsCsv = ...
+      if not name or not idsCsv then
+        Journalator.Utilities.Message("Usage: /jnr invest addids <name> <id,id,...>")
+        return
+      end
+      local ids = {}
+      for token in string.gmatch(idsCsv, "[^,]+") do
+        table.insert(ids, token)
+      end
+      Journalator.Investing.AddIDs(name, ids)
+      return
+    end
+
+    if cmd == "addnames" then
+      local name, namesJoined = ...
+      if not name or not namesJoined then
+        Journalator.Utilities.Message("Usage: /jnr invest addnames <name> <name|name|...>")
+        return
+      end
+      local names = {}
+      for token in string.gmatch(namesJoined, "[^|]+") do
+        table.insert(names, token)
+      end
+      Journalator.Investing.AddNames(name, names)
+      return
+    end
+
+    if cmd == "setbudget" then
+      local name, amountText = ...
+      if not name or not amountText then
+        Journalator.Utilities.Message("Usage: /jnr invest setbudget <name> <amount>")
+        return
+      end
+      local copper = Journalator.Investing.ParseMoney(amountText)
+      Journalator.Investing.SetPerItemBudget(name, copper)
+      return
+    end
+
+    if cmd == "list" then
+      Journalator.Investing.ListGroups()
+      return
+    end
+
+    Journalator.Utilities.Message("Unknown invest command: " .. tostring(cmd))
+  end,
 }
 function Journalator.SlashCmd.Handler(input)
   if input == "" then
