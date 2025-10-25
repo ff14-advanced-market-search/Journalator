@@ -1,5 +1,8 @@
+---@class JournalatorInvestONatorPortfolioDisplayMixin
 JournalatorInvestONatorPortfolioDisplayMixin = CreateFromMixins(JournalatorDisplayMixin)
 
+---Initialize the portfolio display
+---Sets up the portfolio list and create dialog
 function JournalatorInvestONatorPortfolioDisplayMixin:OnLoad()
   JournalatorDisplayMixin.OnLoad(self)
   
@@ -8,10 +11,13 @@ function JournalatorInvestONatorPortfolioDisplayMixin:OnLoad()
   self:RefreshPortfolioList()
 end
 
+---Handle the display being shown
+---Refreshes the portfolio list
 function JournalatorInvestONatorPortfolioDisplayMixin:OnShow()
   self:RefreshPortfolioList()
 end
 
+---Set up the scrollable portfolio list
 function JournalatorInvestONatorPortfolioDisplayMixin:SetupPortfolioList()
   -- Create scroll frame for portfolio list
   local scrollFrame = CreateFrame("ScrollFrame", nil, self, "UIPanelScrollFrameTemplate")
@@ -27,6 +33,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupPortfolioList()
   self.PortfolioFrames = {}
 end
 
+---Set up the portfolio creation dialog
 function JournalatorInvestONatorPortfolioDisplayMixin:SetupCreatePortfolioDialog()
   -- Create portfolio creation dialog
   local dialog = CreateFrame("Frame", nil, self, "DialogBoxFrameTemplate")
@@ -90,6 +97,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupCreatePortfolioDialog
   self.InvestmentEditBox = investmentEditBox
 end
 
+---Refresh the portfolio list display
+---Clears existing frames and recreates them based on current data
 function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   -- Clear existing frames
   for _, frame in pairs(self.PortfolioFrames) do
@@ -122,6 +131,10 @@ function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   end
 end
 
+---Create a frame for displaying a portfolio
+---@param portfolioId number The ID of the portfolio
+---@param portfolio PortfolioData The portfolio data
+---@return Frame frame The created portfolio frame
 function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portfolioId, portfolio)
   local frame = CreateFrame("Frame", nil, self.Content)
   frame:SetSize(self.Content:GetWidth() - 40, 200)
@@ -193,6 +206,11 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   return frame
 end
 
+---Create a frame for displaying an item within a portfolio
+---@param itemId number The ID of the item
+---@param item ItemData The item data
+---@param parent Frame The parent frame
+---@return Frame frame The created item frame
 function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, item, parent)
   local frame = CreateFrame("Frame", nil, parent)
   frame:SetSize(parent:GetWidth(), 20)
@@ -213,6 +231,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   return frame
 end
 
+---Show dialog for adding items to a portfolio
+---@param portfolioId number The ID of the portfolio
 function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfolioId)
   -- This would show a dialog to add items to the portfolio
   -- For now, we'll just show a simple message

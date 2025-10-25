@@ -57,6 +57,9 @@ function Journalator.SlashCmd.Debug(...)
   end
 end
 
+---Handle Invest-O-Nator slash commands
+---Supports create, add, and list subcommands
+---@param ... string Command arguments
 function Journalator.SlashCmd.InvestONator(...)
   local command = select(1, ...)
   
@@ -67,17 +70,22 @@ function Journalator.SlashCmd.InvestONator(...)
     if not name or not investment then
       Journalator.Utilities.Message("Usage: /jnr invest create <name> <investment>")
       Journalator.Utilities.Message("Example: /jnr invest create \"Materials\" 3000000")
+      Journalator.Utilities.Message("Gold formats: 100g, 10000s, 1000000c, or plain numbers")
       return
     end
     
     local investmentAmount = Journalator.InvestONator.ParseGoldInput(investment)
     if investmentAmount <= 0 then
-      Journalator.Utilities.Message("Invalid investment amount")
+      Journalator.Utilities.Message("Invalid investment amount. Use formats like 100g, 10000s, or 1000000c")
       return
     end
     
     local portfolioId = Journalator.InvestONator.CreatePortfolio(name, investmentAmount)
-    Journalator.Utilities.Message("Created portfolio '" .. name .. "' with " .. Journalator.InvestONator.FormatGold(investmentAmount) .. " investment")
+    if portfolioId then
+      Journalator.Utilities.Message("Created portfolio '" .. name .. "' with " .. Journalator.InvestONator.FormatGold(investmentAmount) .. " investment")
+    else
+      Journalator.Utilities.Message("Failed to create portfolio. Check your input.")
+    end
     
   elseif command == "add" then
     local portfolioId = tonumber(select(2, ...))
