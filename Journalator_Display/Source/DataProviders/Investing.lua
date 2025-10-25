@@ -1,6 +1,14 @@
 local INVESTING_DATA_PROVIDER_LAYOUT = {
   {
     headerTemplate = "AuctionatorStringColumnHeaderTemplate",
+    headerText = AUCTIONATOR_L_NAME,
+    headerParameters = { "itemName" },
+    cellTemplate = "AuctionatorStringCellTemplate",
+    cellParameters = { "itemNamePretty" },
+    width = 300,
+  },
+  {
+    headerTemplate = "AuctionatorStringColumnHeaderTemplate",
     headerText = JOURNALATOR_L_GROUP,
     headerParameters = { "groupName" },
     cellTemplate = "AuctionatorStringCellTemplate",
@@ -48,6 +56,10 @@ local function matchesGroupItem(itemName, itemLink, group)
   return false
 end
 
+local function getItemIDFromLink(itemLink)
+  return tonumber((itemLink or ""):match("item:(%d+)"))
+end
+
 function JournalatorInvestingDataProviderMixin:Refresh()
   self.onPreserveScroll()
   self:Reset()
@@ -55,9 +67,9 @@ function JournalatorInvestingDataProviderMixin:Refresh()
   local results = {}
   local groups = Journalator.Investing and Journalator.Investing.GetConfig() or {}
 
-  -- Precompute spent per group from Invoices (purchases only)
+  -- Precompute spent per item within each group from Invoices (purchases only)
   local rangeTime = self:GetTimeForRange()
-  local spentByGroup = {}
+  local spentByGroupItem = {}
 
   for _, entry in ipairs(Journalator.Archiving.GetRange(rangeTime, "Invoices")) do
     if entry.invoiceType == "buyer" then
@@ -69,33 +81,77 @@ function JournalatorInvestingDataProviderMixin:Refresh()
         playerName = entry.playerName,
       }
       if self:Filter(filterItem) then
+        -- Ensure we have a usable link for ID matching if possible
+        local link = entry.itemLink or Journalator.GetPostedItemLink(entry.itemName, math.floor(entry.value / math.max(1, entry.count or 1)), 0, entry.time, rangeTime)
+        local itemID = getItemIDFromLink(link)
+        local lowerName = entry.itemName and string.lower(entry.itemName) or nil
+
         for groupName, group in pairs(groups) do
-          if matchesGroupItem(entry.itemName, entry.itemLink, group) then
-            local moneyOut = entry.value or 0
-            spentByGroup[groupName] = (spentByGroup[groupName] or 0) + moneyOut
+          if group and group.items then
+            local matchedKey
+            if itemID and group.items["id:" .. itemID] then
+              matchedKey = "id:" .. itemID
+            elseif lowerName and group.items["name:" .. lowerName] then
+              matchedKey = "name:" .. lowerName
+            end
+            if matchedKey then
+              spentByGroupItem[groupName] = spentByGroupItem[groupName] or {}
+              local key = matchedKey
+              spentByGroupItem[groupName][key] = (spentByGroupItem[groupName][key] or 0) + (entry.value or 0)
+            end
           end
         end
       end
     end
   end
 
+  -- Build rows for every item in groups (including not yet purchased)
   for groupName, group in pairs(groups) do
     local perItemBudget = group.perItemBudget or 0
-    local spent = spentByGroup[groupName] or 0
-    local remaining = perItemBudget - spent
-    table.insert(results, {
-      groupName = groupName,
-      perItemBudget = perItemBudget,
-      spent = spent,
-      remaining = remaining,
-      index = groupName,
-      value = remaining,
-      searchTerm = groupName,
-    })
+    for key, _ in pairs(group.items or {}) do
+      local spent = (spentByGroupItem[groupName] and spentByGroupItem[groupName][key]) or 0
+      local itemName = nil
+      local itemLink = nil
+      if key:sub(1, 3) == "id:" then
+        local id = tonumber(key:sub(4))
+        if id then
+          itemLink = "item:" .. id
+          itemName = (C_Item.GetItemInfo(itemLink)) or ("Item ID " .. tostring(id))
+        end
+      elseif key:sub(1, 5) == "name:" then
+        itemName = key:sub(6)
+      end
+      itemName = itemName or "Unknown"
+      local remaining = perItemBudget - spent
+
+      local pretty = itemName
+      if itemLink then
+        pretty = Journalator.ApplyQualityColor(Journalator.Utilities.AddQualityIconToItemName(itemName, itemLink), itemLink)
+      end
+
+      table.insert(results, {
+        groupName = groupName,
+        itemName = itemName,
+        itemNamePretty = pretty,
+        itemLink = itemLink,
+        perItemBudget = perItemBudget,
+        spent = spent,
+        remaining = remaining,
+        index = groupName .. ":" .. key,
+        value = remaining,
+        searchTerm = itemName,
+      })
+    end
   end
 
   -- Stable ordering by group name
-  table.sort(results, function(a, b) return a.groupName < b.groupName end)
+  table.sort(results, function(a, b)
+    if a.groupName == b.groupName then
+      return a.itemName < b.itemName
+    else
+      return a.groupName < b.groupName
+    end
+  end)
 
   self:AppendEntries(results, true)
 end
