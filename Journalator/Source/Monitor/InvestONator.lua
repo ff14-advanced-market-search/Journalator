@@ -2,7 +2,8 @@
 JournalatorMonitorInvestONatorMixin = CreateFromMixins(JournalatorDisplayMixin)
 
 ---Initialize the Invest-O-Nator monitor
----Sets up event handlers for tracking purchases
+-- Initializes the mixin and registers auction-related events used to monitor purchases.
+-- Calls the base display mixin OnLoad and registers the following events: AUCTION_HOUSE_BROWSE_RESULT_UPDATED, AUCTION_HOUSE_CLOSED, and ITEM_PURCHASED.
 function JournalatorMonitorInvestONatorMixin:OnLoad()
   JournalatorDisplayMixin.OnLoad(self)
   
@@ -13,7 +14,9 @@ end
 
 ---Handle events for the Invest-O-Nator monitor
 ---@param eventName string The name of the event
----@param ... any Event arguments
+-- Dispatches incoming events to the mixin's handlers; forwards `ITEM_PURCHASED` events to OnItemPurchased.
+-- @param eventName string The name of the event being delivered.
+-- @param ... any Event-specific arguments forwarded to the handler (passed through to OnItemPurchased for `ITEM_PURCHASED`).
 function JournalatorMonitorInvestONatorMixin:OnEvent(eventName, ...)
   if eventName == "ITEM_PURCHASED" then
     self:OnItemPurchased(...)
@@ -24,7 +27,12 @@ end
 ---@param itemID number The ID of the purchased item
 ---@param itemLink string The item link
 ---@param quantity number The quantity purchased
----@param price number The price per unit in copper
+-- Handle an ITEM_PURASED event: record the purchase against any Invest-O-Nator portfolios that contain the item and notify the user.
+-- For each matching portfolio the function records the purchase, formats the total cost and remaining budget, and emits a user-facing message.
+-- @param itemID number The numeric item identifier.
+-- @param itemLink string|nil The item link string (may be nil or unused).
+-- @param quantity number The number of units purchased (must be > 0).
+-- @param price number The price per unit in copper (must be > 0).
 function JournalatorMonitorInvestONatorMixin:OnItemPurchased(itemID, itemLink, quantity, price)
   -- Validate input parameters
   if not itemID or not quantity or not price or quantity <= 0 or price <= 0 then

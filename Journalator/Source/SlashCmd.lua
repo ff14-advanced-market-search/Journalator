@@ -48,6 +48,8 @@ function Journalator.SlashCmd.Config(optionName, value1, ...)
   Journalator.Utilities.Message("Now set " .. optionName .. ": " .. tostring(Journalator.Config.Get(optionName)))
 end
 
+-- Toggles the DEBUG configuration option and notifies the user.
+-- When debug is enabled, sends "Debug mode on"; when disabled, sends "Debug mode off".
 function Journalator.SlashCmd.Debug(...)
   Journalator.Config.Set(Journalator.Config.Options.DEBUG, not Journalator.Config.Get(Journalator.Config.Options.DEBUG))
   if Journalator.Config.Get(Journalator.Config.Options.DEBUG) then
@@ -59,7 +61,12 @@ end
 
 ---Handle Invest-O-Nator slash commands
 ---Supports create, add, and list subcommands
----@param ... string Command arguments
+-- Handles Invest-O-Nator slash subcommands: `create`, `add`, `list`, and prints usage help.
+-- @param ... Command arguments where the first argument is the subcommand:
+--   - "create", name, investment: create a new portfolio named `name` with `investment` (gold format like `100g`, `10000s`, `1000000c`, or plain number).
+--   - "add", portfolioId, itemName, amount: add an item with `itemName` and target `amount` to the portfolio identified by `portfolioId`.
+--   - "list": list all portfolios with their spent/target and completion percentage.
+-- Unrecognized subcommands cause the function to emit the invest usage/help messages.
 function Journalator.SlashCmd.InvestONator(...)
   local command = select(1, ...)
   
@@ -146,6 +153,10 @@ local COMMANDS = {
   ["debug"] = Journalator.SlashCmd.Debug,
   ["invest"] = Journalator.SlashCmd.InvestONator,
 }
+-- Handles top-level slash command input for the Journalator addon.
+-- Dispatches the first token as a subcommand, passing remaining tokens as arguments.
+-- If `input` is empty, toggles the Journalator view if available or shows a disabled message.
+-- @param input The raw command string provided after the slash command (may be empty).
 function Journalator.SlashCmd.Handler(input)
   if input == "" then
     if Journalator.ToggleView then
