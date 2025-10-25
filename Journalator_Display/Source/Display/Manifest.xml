@@ -27,6 +27,7 @@
   <Include file="BasicMail\Manifest.xml" />
   <Include file="Trades.xml" />
   <Include file="Info.xml" />
+  <Include file="InvestONator\Manifest.xml" />
 
   <Include file="Main.xml" />
 </Ui>

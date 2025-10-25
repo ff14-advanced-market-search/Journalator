@@ -82,12 +82,19 @@ local function SetupMonitors()
   else
     Journalator.Debug.Message("mission tables monitor disabled")
   end
+
+  if Journalator.Config.Get(Journalator.Config.Options.MONITOR_INVEST_O_NATOR) then
+    CreateFrame("Frame", "JNRInvestONatorMonitor", nil, "JournalatorInvestONatorMonitorTemplate")
+  else
+    Journalator.Debug.Message("invest-o-nator monitor disabled")
+  end
 end
 
 local function InitializeBase()
   Journalator.Config.InitializeData()
 
   Journalator.Archiving.Initialize()
+  Journalator.InvestONator.Initialize()
 
   local GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
   Journalator.State.CurrentVersion = GetAddOnMetadata("Journalator", "Version")

@@ -57,11 +57,86 @@ function Journalator.SlashCmd.Debug(...)
   end
 end
 
+function Journalator.SlashCmd.InvestONator(...)
+  local command = select(1, ...)
+  
+  if command == "create" then
+    local name = select(2, ...)
+    local investment = select(3, ...)
+    
+    if not name or not investment then
+      Journalator.Utilities.Message("Usage: /jnr invest create <name> <investment>")
+      Journalator.Utilities.Message("Example: /jnr invest create \"Materials\" 3000000")
+      return
+    end
+    
+    local investmentAmount = Journalator.InvestONator.ParseGoldInput(investment)
+    if investmentAmount <= 0 then
+      Journalator.Utilities.Message("Invalid investment amount")
+      return
+    end
+    
+    local portfolioId = Journalator.InvestONator.CreatePortfolio(name, investmentAmount)
+    Journalator.Utilities.Message("Created portfolio '" .. name .. "' with " .. Journalator.InvestONator.FormatGold(investmentAmount) .. " investment")
+    
+  elseif command == "add" then
+    local portfolioId = tonumber(select(2, ...))
+    local itemName = select(3, ...)
+    local amount = select(4, ...)
+    
+    if not portfolioId or not itemName or not amount then
+      Journalator.Utilities.Message("Usage: /jnr invest add <portfolioId> <itemName> <amount>")
+      return
+    end
+    
+    local amountValue = Journalator.InvestONator.ParseGoldInput(amount)
+    if amountValue <= 0 then
+      Journalator.Utilities.Message("Invalid amount")
+      return
+    end
+    
+    -- Get item ID from name (simplified - would need better item lookup)
+    local itemId = 0 -- This would need proper item ID lookup
+    if Journalator.InvestONator.AddItemToPortfolio(portfolioId, itemId, itemName, amountValue) then
+      Journalator.Utilities.Message("Added " .. itemName .. " with " .. Journalator.InvestONator.FormatGold(amountValue) .. " target to portfolio")
+    else
+      Journalator.Utilities.Message("Failed to add item to portfolio")
+    end
+    
+  elseif command == "list" then
+    local portfolios = Journalator.InvestONator.GetAllPortfolios()
+    if next(portfolios) == nil then
+      Journalator.Utilities.Message("No portfolios found")
+      return
+    end
+    
+    Journalator.Utilities.Message("Portfolios:")
+    for portfolioId, portfolio in pairs(portfolios) do
+      local progress = Journalator.InvestONator.GetPortfolioProgress(portfolioId)
+      Journalator.Utilities.Message(string.format(
+        "%d. %s - %s / %s (%d%%)",
+        portfolioId,
+        portfolio.name,
+        Journalator.InvestONator.FormatGold(progress.totalSpent),
+        Journalator.InvestONator.FormatGold(progress.totalTarget),
+        math.floor(progress.completionPercentage)
+      ))
+    end
+    
+  else
+    Journalator.Utilities.Message("Invest-o-nator commands:")
+    Journalator.Utilities.Message("/jnr invest create <name> <investment> - Create a new portfolio")
+    Journalator.Utilities.Message("/jnr invest add <portfolioId> <itemName> <amount> - Add item to portfolio")
+    Journalator.Utilities.Message("/jnr invest list - List all portfolios")
+  end
+end
+
 local COMMANDS = {
   ["c"] = Journalator.SlashCmd.Config,
   ["config"] = Journalator.SlashCmd.Config,
   ["d"] = Journalator.SlashCmd.Debug,
   ["debug"] = Journalator.SlashCmd.Debug,
+  ["invest"] = Journalator.SlashCmd.InvestONator,
 }
 function Journalator.SlashCmd.Handler(input)
   if input == "" then
