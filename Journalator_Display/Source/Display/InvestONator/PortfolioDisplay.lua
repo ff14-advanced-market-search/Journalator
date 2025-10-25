@@ -2,7 +2,8 @@
 JournalatorInvestONatorPortfolioDisplayMixin = CreateFromMixins(JournalatorDisplayMixin)
 
 ---Initialize the portfolio display
----Sets up the portfolio list and create dialog
+-- Initialize the InvestONator portfolio display.
+-- Calls the base OnLoad, sets up the portfolio list and the create-portfolio dialog, and refreshes the displayed portfolios.
 function JournalatorInvestONatorPortfolioDisplayMixin:OnLoad()
   JournalatorDisplayMixin.OnLoad(self)
   
@@ -33,7 +34,9 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupPortfolioList()
   self.PortfolioFrames = {}
 end
 
----Set up the portfolio creation dialog
+-- Creates and configures the portfolio creation dialog used to add new portfolios.
+-- The dialog includes inputs for portfolio name and total investment, plus Create and Cancel buttons.
+-- Stores dialog and input widgets on the mixin as `CreateDialog`, `NameEditBox`, and `InvestmentEditBox`.
 function JournalatorInvestONatorPortfolioDisplayMixin:SetupCreatePortfolioDialog()
   -- Create portfolio creation dialog
   local dialog = CreateFrame("Frame", nil, self, "DialogBoxFrameTemplate")
@@ -98,7 +101,9 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupCreatePortfolioDialog
 end
 
 ---Refresh the portfolio list display
----Clears existing frames and recreates them based on current data
+-- Rebuilds the portfolio list UI from current portfolio data.
+-- Hides and detaches any existing portfolio frames, creates and positions a frame for each portfolio, and updates the content container height.
+-- Ensures a "Create" button exists to open the portfolio creation dialog.
 function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   -- Clear existing frames
   for _, frame in pairs(self.PortfolioFrames) do
@@ -134,7 +139,11 @@ end
 ---Create a frame for displaying a portfolio
 ---@param portfolioId number The ID of the portfolio
 ---@param portfolio PortfolioData The portfolio data
----@return Frame frame The created portfolio frame
+-- Creates a UI frame that represents a portfolio, including its header, progress summary, a list of up to five items, and action buttons.
+-- The created frame is added to the mixin's PortfolioFrames list and has its `PortfolioId` field set.
+-- @param portfolioId number The identifier of the portfolio to display.
+-- @param portfolio table The portfolio data (expected fields: `name`, `items`).
+-- @return Frame The created portfolio frame with `PortfolioId` set and appended to `self.PortfolioFrames`.
 function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portfolioId, portfolio)
   local frame = CreateFrame("Frame", nil, self.Content)
   frame:SetSize(self.Content:GetWidth() - 40, 200)
@@ -210,7 +219,11 @@ end
 ---@param itemId number The ID of the item
 ---@param item ItemData The item data
 ---@param parent Frame The parent frame
----@return Frame frame The created item frame
+-- Creates a compact row that displays an item's name and its purchase progress.
+-- @param itemId number The item's identifier.
+-- @param item table Table with fields `name`, `purchasedAmount`, `targetAmount`, and `remainingAmount`.
+-- @param parent Frame The parent frame that will contain the item row; the row width matches the parent's width.
+-- @return Frame The created item frame.
 function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, item, parent)
   local frame = CreateFrame("Frame", nil, parent)
   frame:SetSize(parent:GetWidth(), 20)
@@ -232,7 +245,9 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
 end
 
 ---Show dialog for adding items to a portfolio
----@param portfolioId number The ID of the portfolio
+-- Shows the Add Item dialog for the given portfolio.
+-- Currently this function only displays a message that the dialog is not implemented and suggests using the API to add items programmatically.
+-- @param portfolioId number The ID of the portfolio to add items to.
 function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfolioId)
   -- This would show a dialog to add items to the portfolio
   -- For now, we'll just show a simple message
