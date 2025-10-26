@@ -159,6 +159,56 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupPortfolioList()
   self.PortfolioFramePool = { free = {}, inUse = {} }
 end
 
+-- Build dynamic tabs for portfolios
+function JournalatorInvestONatorPortfolioDisplayMixin:RebuildTabs()
+  self.Tabs = self.Tabs or {}
+  for _, b in ipairs(self.Tabs) do b:Hide() end
+  local portfolios = Journalator.InvestONator.GetAllPortfolios()
+  local last
+  local index = 1
+  for portfolioId, portfolio in pairs(portfolios) do
+    local tab = self.Tabs[index]
+    if not tab then
+      tab = CreateFrame("Button", nil, self, "JournalatorTabButtonTemplate")
+      self.Tabs[index] = tab
+    end
+    tab:Show()
+    tab.displayMode = tostring(portfolioId)
+    tab.title = portfolio.name
+    tab:SetText(portfolio.name)
+    tab:SetScript("OnClick", function()
+      self:SetDisplayMode(tab.displayMode)
+    end)
+    tab:ClearAllPoints()
+    if not last then
+      tab:SetPoint("BOTTOMLEFT", 20, 8)
+    else
+      tab:SetPoint("LEFT", last, "RIGHT", -15, 0)
+    end
+    last = tab
+    index = index + 1
+  end
+  PanelTemplates_SetNumTabs(self, #self.Tabs)
+end
+
+-- Handle clicking a portfolio tab: displayMode is the portfolioId as string
+function JournalatorInvestONatorPortfolioDisplayMixin:SetDisplayMode(displayMode)
+  local pid = tonumber(displayMode)
+  if pid then
+    self.ActivePortfolioId = pid
+  end
+  -- Highlight the active tab
+  if self.Tabs then
+    for index, tab in ipairs(self.Tabs) do
+      if tab.displayMode == displayMode then
+        PanelTemplates_SetTab(self, index)
+        break
+      end
+    end
+  end
+  self:RefreshPortfolioList()
+end
+
 -- Create a manual Refresh button to (re)load archives and recalculate purchases
 function JournalatorInvestONatorPortfolioDisplayMixin:SetupRefreshButton()
   if self.RefreshButton then
@@ -305,7 +355,17 @@ function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   self:ReleaseAllPortfolioFrames()
   
   local portfolios = Journalator.InvestONator.GetAllPortfolios()
+  -- (Re)build tabs to reflect current portfolios
+  self:RebuildTabs()
   local yOffset = 0
+
+  -- When tabs are present, show only the active portfolio
+  local activePortfolioId = self.ActivePortfolioId
+  if not activePortfolioId then
+    -- default to first key
+    for pid, _ in pairs(portfolios) do activePortfolioId = pid break end
+  end
+  self.ActivePortfolioId = activePortfolioId
   
   -- Ensure Create button exists (also for empty state)
   if not self.CreateButton then
@@ -339,8 +399,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
     end
   end
   
-  for portfolioId, portfolio in pairs(portfolios) do
-    local frame = self:CreatePortfolioFrame(portfolioId, portfolio)
+  if activePortfolioId and portfolios[activePortfolioId] then
+    local frame = self:CreatePortfolioFrame(activePortfolioId, portfolios[activePortfolioId])
     if frame then
       frame:SetPoint("TOPLEFT", self.Content, "TOPLEFT", 0, -yOffset)
       yOffset = yOffset + frame:GetHeight() + 10
