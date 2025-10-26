@@ -22,6 +22,83 @@ local function CreateBasicDialog(parent, width, height)
   return dialog
 end
 
+-- Attempt to walk up the parent chain to find the root display that owns Filters
+local function FindRootWithFilters(frame)
+  local current = frame
+  while current do
+    if current.Filters ~= nil then
+      return current
+    end
+    current = current:GetParent()
+  end
+  return nil
+end
+
+-- Build and cache an index of items (name -> { name, itemID, itemLink })
+-- sourced from Journalator logs within the active time range.
+function JournalatorInvestONatorPortfolioDisplayMixin:BuildItemSearchIndex()
+  local root = FindRootWithFilters(self)
+  local fromTime = root and root.Filters and root.Filters:GetTimeForRange() or time() - 60 * 60 * 24 * 90
+
+  -- Avoid rebuilding if the time range hasn't changed
+  if self.ItemIndex and self.ItemIndexFromTime == fromTime then
+    return
+  end
+
+  self.ItemIndex = {}
+  self.ItemIndexFromTime = fromTime
+
+  -- Ensure archives up to the selected time are loaded
+  Journalator.Archiving.LoadUpTo(fromTime)
+
+  local invoices = Journalator.Archiving.GetRange(fromTime, "Invoices")
+  for _, entry in ipairs(invoices) do
+    if entry.time >= fromTime and entry.itemName then
+      local name = tostring(entry.itemName)
+      local lower = string.lower(name)
+      if self.ItemIndex[lower] == nil then
+        local itemID = nil
+        if entry.itemLink then
+          itemID = tonumber(string.match(entry.itemLink, "|Hitem:(%d+):"))
+        end
+        if not itemID and C_Item and C_Item.GetItemInfoInstant then
+          local id = C_Item.GetItemInfoInstant(entry.itemLink or name)
+          if type(id) == "number" then
+            itemID = id
+          elseif type(id) == "table" then
+            itemID = id and id
+          end
+        end
+        self.ItemIndex[lower] = {
+          name = name,
+          itemID = itemID,
+          itemLink = entry.itemLink,
+        }
+      end
+    end
+  end
+end
+
+-- Return up to maxResults suggestions matching the provided query (substring, case-insensitive)
+function JournalatorInvestONatorPortfolioDisplayMixin:GetItemSuggestions(query, maxResults)
+  if not query or query == "" then
+    return {}
+  end
+  self:BuildItemSearchIndex()
+  local results = {}
+  local needle = string.lower(query)
+  for lowerName, entry in pairs(self.ItemIndex or {}) do
+    if string.find(lowerName, needle, 1, true) then
+      table.insert(results, entry)
+      if #results >= (maxResults or 10) then
+        break
+      end
+    end
+  end
+  table.sort(results, function(a, b) return a.name < b.name end)
+  return results
+end
+
 -- Delete-confirmation popup for removing a portfolio
 if not StaticPopupDialogs["JOURNALATOR_CONFIRM_DELETE_PORTFOLIO"] then
   StaticPopupDialogs["JOURNALATOR_CONFIRM_DELETE_PORTFOLIO"] = {
@@ -370,7 +447,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
   end
 
   if not self.AddItemDialog then
-    local dialog = CreateBasicDialog(self, 420, 260)
+    local dialog = CreateBasicDialog(self, 420, 300)
 
     dialog.Title:SetText(JOURNALATOR_L_ADD_ITEM or "Add Item")
 
@@ -384,9 +461,71 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
     itemEditBox:SetSize(360, 30)
     itemEditBox:SetAutoFocus(false)
 
+    -- Suggestions list under the item box
+    local suggestionsFrame = CreateFrame("Frame", nil, dialog)
+    suggestionsFrame:SetPoint("TOPLEFT", itemEditBox, "BOTTOMLEFT", 0, -2)
+    suggestionsFrame:SetSize(360, 120)
+    suggestionsFrame:Hide()
+
+    local suggestionsBG = suggestionsFrame:CreateTexture(nil, "BACKGROUND")
+    suggestionsBG:SetColorTexture(0, 0, 0, 0.8)
+    suggestionsBG:SetAllPoints()
+
+    suggestionsFrame.buttons = {}
+    local function acquireButton()
+      for _, b in ipairs(suggestionsFrame.buttons) do
+        if not b:IsShown() then
+          return b
+        end
+      end
+      local b = CreateFrame("Button", nil, suggestionsFrame, "UIPanelButtonTemplate")
+      b:SetSize(340, 20)
+      if #suggestionsFrame.buttons == 0 then
+        b:SetPoint("TOPLEFT", 10, -8)
+      else
+        b:SetPoint("TOPLEFT", suggestionsFrame.buttons[#suggestionsFrame.buttons], "BOTTOMLEFT", 0, -4)
+      end
+      table.insert(suggestionsFrame.buttons, b)
+      return b
+    end
+
+    function dialog:ShowSuggestions(items)
+      -- Hide all existing buttons
+      for _, b in ipairs(suggestionsFrame.buttons) do
+        b:Hide()
+      end
+      if not items or #items == 0 then
+        suggestionsFrame:Hide()
+        return
+      end
+      suggestionsFrame:Show()
+      local shown = 0
+      for _, entry in ipairs(items) do
+        local b = acquireButton()
+        b:SetText(entry.name)
+        b:SetScript("OnClick", function()
+          itemEditBox:SetText(entry.name)
+          dialog.SelectedItemId = entry.itemID
+          dialog.SelectedItemName = entry.name
+          suggestionsFrame:Hide()
+        end)
+        b:Show()
+        shown = shown + 1
+        if shown >= 6 then break end
+      end
+    end
+
+    itemEditBox:SetScript("OnTextChanged", function()
+      dialog.SelectedItemId = nil
+      dialog.SelectedItemName = nil
+      local query = itemEditBox:GetText()
+      local items = self:GetItemSuggestions(query, 10)
+      dialog:ShowSuggestions(items)
+    end)
+
     -- Amount input
     local amountLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    amountLabel:SetPoint("TOPLEFT", itemEditBox, "BOTTOMLEFT", 0, -20)
+    amountLabel:SetPoint("TOPLEFT", suggestionsFrame, "BOTTOMLEFT", 0, -10)
     amountLabel:SetText(JOURNALATOR_L_TARGET_AMOUNT or "Target Amount")
 
     local amountEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
@@ -414,8 +553,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
         return
       end
 
-      local itemId
-      if type(itemArg) == "string" then
+      local itemId = dialog.SelectedItemId
+      if not itemId and type(itemArg) == "string" then
         itemId = tonumber(itemArg:match("|Hitem:(%d+):"))
           or tonumber(itemArg:match("item:(%d+)"))
           or tonumber(itemArg:match("^(%d+)$"))
@@ -426,7 +565,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
         return
       end
 
-      local resolvedName = (GetItemInfo and GetItemInfo(itemId)) or (itemArg:match("%[(.-)%]")) or tostring(itemArg)
+      local resolvedName = dialog.SelectedItemName or (GetItemInfo and GetItemInfo(itemId)) or (itemArg:match("%[(.-)%]")) or tostring(itemArg)
 
       if Journalator.InvestONator.AddItemToPortfolio(self.ActivePortfolioId or portfolioId, itemId, resolvedName, amountValue) then
         self:RefreshPortfolioList()
