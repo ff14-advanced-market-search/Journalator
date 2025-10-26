@@ -1,12 +1,10 @@
 ---@class JournalatorInvestONatorPortfolioDisplayMixin
-JournalatorInvestONatorPortfolioDisplayMixin = CreateFromMixins(JournalatorDisplayMixin)
+JournalatorInvestONatorPortfolioDisplayMixin = {}
 
 ---Initialize the portfolio display
 -- Initialize the InvestONator portfolio display.
 -- Calls the base OnLoad, sets up the portfolio list and the create-portfolio dialog, and refreshes the displayed portfolios.
 function JournalatorInvestONatorPortfolioDisplayMixin:OnLoad()
-  JournalatorDisplayMixin.OnLoad(self)
-  
   self:SetupPortfolioList()
   self:SetupCreatePortfolioDialog()
   self:RefreshPortfolioList()

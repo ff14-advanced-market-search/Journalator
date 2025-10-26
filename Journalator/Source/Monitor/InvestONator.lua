@@ -5,9 +5,19 @@ JournalatorMonitorInvestONatorMixin = {}
 -- Initializes the mixin and registers auction-related events used to monitor purchases.
 -- Registers the following events: AUCTION_HOUSE_BROWSE_RESULT_UPDATED, AUCTION_HOUSE_CLOSED, and ITEM_PURCHASED.
 function JournalatorMonitorInvestONatorMixin:OnLoad()
-  self:RegisterEvent("AUCTION_HOUSE_BROWSE_RESULT_UPDATED")
-  self:RegisterEvent("AUCTION_HOUSE_CLOSED")
-  self:RegisterEvent("ITEM_PURCHASED")
+  local safeRegister = function(eventName)
+    -- Some events don't exist on certain clients/patch levels
+    local ok = pcall(self.RegisterEvent, self, eventName)
+    if not ok then
+      -- Silently ignore unsupported events
+      return
+    end
+  end
+
+  safeRegister("ITEM_PURCHASED")
+  -- Retail-only events; guard registration
+  safeRegister("AUCTION_HOUSE_BROWSE_RESULT_UPDATED")
+  safeRegister("AUCTION_HOUSE_CLOSED")
 end
 
 ---Handle events for the Invest-O-Nator monitor
