@@ -1,6 +1,27 @@
 ---@class JournalatorInvestONatorPortfolioDisplayMixin
 JournalatorInvestONatorPortfolioDisplayMixin = {}
 
+-- Create a very simple, cross-client dialog frame without relying on Blizzard
+-- templates that may not exist on all versions (e.g. DialogBoxFrameTemplate).
+local function CreateBasicDialog(parent, width, height)
+  local dialog = CreateFrame("Frame", nil, parent)
+  dialog:SetSize(width, height)
+  dialog:SetPoint("CENTER")
+  dialog:SetFrameStrata("DIALOG")
+  dialog:Hide()
+
+  local bg = dialog:CreateTexture(nil, "BACKGROUND")
+  bg:SetColorTexture(0, 0, 0, 0.85)
+  bg:SetAllPoints()
+
+  local title = dialog:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
+  title:SetPoint("TOP", 0, -10)
+  -- Expose a Title-like field for callers that expect dialog.Title
+  dialog.Title = title
+
+  return dialog
+end
+
 ---Initialize the portfolio display
 -- Initialize the InvestONator portfolio display.
 -- Calls the base OnLoad, sets up the portfolio list and the create-portfolio dialog, and refreshes the displayed portfolios.
@@ -85,10 +106,7 @@ end
 -- Stores dialog and input widgets on the mixin as `CreateDialog`, `NameEditBox`, and `InvestmentEditBox`.
 function JournalatorInvestONatorPortfolioDisplayMixin:SetupCreatePortfolioDialog()
   -- Create portfolio creation dialog
-  local dialog = CreateFrame("Frame", nil, self, "DialogBoxFrameTemplate")
-  dialog:SetSize(400, 300)
-  dialog:SetPoint("CENTER")
-  dialog:Hide()
+  local dialog = CreateBasicDialog(self, 400, 300)
   
   dialog.Title:SetText(JOURNALATOR_L_CREATE_PORTFOLIO)
   
@@ -334,10 +352,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
   end
 
   if not self.AddItemDialog then
-    local dialog = CreateFrame("Frame", nil, self, "DialogBoxFrameTemplate")
-    dialog:SetSize(420, 260)
-    dialog:SetPoint("CENTER")
-    dialog:Hide()
+    local dialog = CreateBasicDialog(self, 420, 260)
 
     dialog.Title:SetText(JOURNALATOR_L_ADD_ITEM or "Add Item")
 
