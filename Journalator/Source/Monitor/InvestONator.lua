@@ -1,12 +1,10 @@
 ---@class JournalatorMonitorInvestONatorMixin
-JournalatorMonitorInvestONatorMixin = CreateFromMixins(JournalatorDisplayMixin)
+JournalatorMonitorInvestONatorMixin = {}
 
 ---Initialize the Invest-O-Nator monitor
 -- Initializes the mixin and registers auction-related events used to monitor purchases.
--- Calls the base display mixin OnLoad and registers the following events: AUCTION_HOUSE_BROWSE_RESULT_UPDATED, AUCTION_HOUSE_CLOSED, and ITEM_PURCHASED.
+-- Registers the following events: AUCTION_HOUSE_BROWSE_RESULT_UPDATED, AUCTION_HOUSE_CLOSED, and ITEM_PURCHASED.
 function JournalatorMonitorInvestONatorMixin:OnLoad()
-  JournalatorDisplayMixin.OnLoad(self)
-  
   self:RegisterEvent("AUCTION_HOUSE_BROWSE_RESULT_UPDATED")
   self:RegisterEvent("AUCTION_HOUSE_CLOSED")
   self:RegisterEvent("ITEM_PURCHASED")

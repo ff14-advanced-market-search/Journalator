@@ -1,8 +1,3 @@
 <Ui xmlns="http://www.blizzard.com/wow/ui/">
-  <Frame name="JournalatorInvestONatorPortfolioDisplayTemplate" inherits="JournalatorDisplayTemplate" virtual="true">
-    <Scripts>
-      <OnLoad method="OnLoad" />
-      <OnShow method="OnShow" />
-    </Scripts>
-  </Frame>
+  <Frame name="JournalatorInvestONatorPortfolioDisplayTemplate" inherits="JournalatorDisplayTemplate" mixin="JournalatorInvestONatorPortfolioDisplayMixin" virtual="true" />
 </Ui>
