@@ -490,6 +490,7 @@ end
 function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, item, parent, portfolioId)
   local frame = CreateFrame("Frame", nil, parent)
   frame:SetSize(parent:GetWidth(), 20)
+  local ownerView = self
   
   local itemName = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   itemName:SetPoint("LEFT", 0, 0)
@@ -537,7 +538,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
       hideOnEscape = true,
       preferredIndex = 3,
     }
-    StaticPopup_Show("JNR_EDIT_ITEM_TARGET", nil, nil, { portfolioId = portfolioId, itemId = itemId, owner = self:GetParent():GetParent():GetParent() })
+    StaticPopup_Show("JNR_EDIT_ITEM_TARGET", nil, nil, { portfolioId = portfolioId, itemId = itemId, owner = ownerView })
   end)
 
   -- Remove item button
@@ -560,7 +561,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
       hideOnEscape = true,
       preferredIndex = 3,
     }
-    StaticPopup_Show("JNR_DELETE_ITEM", nil, nil, { portfolioId = portfolioId, itemId = itemId, owner = self:GetParent():GetParent():GetParent() })
+    StaticPopup_Show("JNR_DELETE_ITEM", nil, nil, { portfolioId = portfolioId, itemId = itemId, owner = ownerView })
   end)
   
   return frame
