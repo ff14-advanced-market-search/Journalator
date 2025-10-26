@@ -64,6 +64,9 @@ function JournalatorMonitorInvestONatorMixin:OnItemPurchased(itemID, itemLink, q
   end
   
   local totalAmount = price * quantity
+  -- Ensure archives are loaded so reconciliation can find the invoice as soon as possible
+  local now = time()
+  Journalator.Archiving.LoadUpTo(now)
   local itemName = GetItemInfo(itemID) or "Unknown Item"
   
   for portfolioId, portfolio in pairs(portfolios) do

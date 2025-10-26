@@ -64,17 +64,28 @@ end
 function Journalator.InvestONator.RecalculateAllPurchases(fromTime)
   fromTime = fromTime or 0
 
-  -- Build a lookup of total spent per itemID from buyer invoices
+  -- Build a lookup of total spent per itemID and by item name (fallback)
   local spentByItemId = {}
+  local spentByNameLower = {}
   local invoices = Journalator.Archiving.GetRange(fromTime, "Invoices")
   for _, inv in ipairs(invoices) do
     if inv.time >= fromTime and inv.invoiceType ~= "seller" then
       local itemId = nil
-      if inv.itemLink then
-        itemId = tonumber(string.match(inv.itemLink or "", "|Hitem:(%d+):"))
+      local itemLink = inv.itemLink
+      if not itemLink and Journalator.GetPostedItemLink then
+        local unitPrice = inv.count and inv.count > 0 and math.floor((inv.value or 0) / inv.count) or nil
+        local unitDeposit = inv.count and inv.count > 0 and math.floor((inv.deposit or 0) / inv.count) or nil
+        itemLink = Journalator.GetPostedItemLink(inv.itemName, unitPrice, unitDeposit, inv.time, fromTime)
+      end
+      if itemLink then
+        itemId = tonumber(string.match(itemLink or "", "|Hitem:(%d+):"))
       end
       if itemId then
         spentByItemId[itemId] = (spentByItemId[itemId] or 0) + (inv.value or 0)
+      end
+      if inv.itemName then
+        local key = string.lower(tostring(inv.itemName))
+        spentByNameLower[key] = (spentByNameLower[key] or 0) + (inv.value or 0)
       end
     end
   end
@@ -82,10 +93,18 @@ function Journalator.InvestONator.RecalculateAllPurchases(fromTime)
   -- Apply totals to any portfolio items that reference the same itemID
   for _, portfolio in pairs(JOURNALATOR_INVEST_O_NATOR_DATA.portfolios or {}) do
     for itemId, item in pairs(portfolio.items or {}) do
+      local spent = 0
       if type(itemId) == "number" and itemId > 0 then
-        local spent = spentByItemId[itemId] or 0
+        spent = spentByItemId[itemId] or 0
+      end
+      if (spent == 0 or spent == nil) and item.name then
+        spent = spentByNameLower[string.lower(item.name)] or 0
+      end
+      if spent and spent > 0 then
         item.purchasedAmount = spent
         item.remainingAmount = math.max(0, (item.targetAmount or 0) - item.purchasedAmount)
+      else
+        Journalator.Debug.Message("InvestONator: No spend found for", tostring(itemId), tostring(item.name))
       end
     end
   end

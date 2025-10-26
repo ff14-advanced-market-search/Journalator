@@ -122,6 +122,7 @@ end
 -- Calls the base OnLoad, sets up the portfolio list and the create-portfolio dialog, and refreshes the displayed portfolios.
 function JournalatorInvestONatorPortfolioDisplayMixin:OnLoad()
   self:SetupPortfolioList()
+  self:SetupRefreshButton()
   self:SetupCreatePortfolioDialog()
   self:RefreshPortfolioList()
 end
@@ -132,7 +133,13 @@ function JournalatorInvestONatorPortfolioDisplayMixin:OnShow()
   -- Re-sync portfolio purchases from invoices using the active time filter
   local root = FindRootWithFilters(self)
   local fromTime = root and root.Filters and root.Filters:GetTimeForRange() or 0
+  Journalator.Archiving.LoadUpTo(fromTime)
   Journalator.InvestONator.RecalculateAllPurchases(fromTime)
+  -- Navigate AH → Invoices to ensure invoices are fully loaded and consistent
+  Auctionator.EventBus
+    :RegisterSource(self, "InvestONator_AutoSwitch")
+    :Fire(self, Journalator.Events.RequestTabSwitch, { root = "AuctionHouse", child = "Invoices" })
+    :UnregisterSource(self)
   self:RefreshPortfolioList()
 end
 
@@ -150,6 +157,32 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupPortfolioList()
   self.ScrollFrame = scrollFrame
   self.Content = content
   self.PortfolioFramePool = { free = {}, inUse = {} }
+end
+
+-- Create a manual Refresh button to (re)load archives and recalculate purchases
+function JournalatorInvestONatorPortfolioDisplayMixin:SetupRefreshButton()
+  if self.RefreshButton then
+    return
+  end
+  local btn = CreateFrame("Button", nil, self, "UIPanelButtonTemplate")
+  btn:SetSize(90, 22)
+  btn:SetPoint("TOPRIGHT", -30, -20)
+  btn:SetText("Refresh")
+  btn:SetScript("OnClick", function()
+    self:ForceRefresh()
+  end)
+  self.RefreshButton = btn
+end
+
+-- Force a reload of archives up to the active time range and update UI
+function JournalatorInvestONatorPortfolioDisplayMixin:ForceRefresh()
+  local root = FindRootWithFilters(self)
+  local fromTime = root and root.Filters and root.Filters:GetTimeForRange() or 0
+  Journalator.Utilities.Message("Invest-o-nator: refreshing from time " .. tostring(fromTime))
+  Journalator.Archiving.LoadUpTo(fromTime, function()
+    Journalator.InvestONator.RecalculateAllPurchases(fromTime)
+    self:RefreshPortfolioList()
+  end)
 end
 
 -- Acquire a reusable portfolio frame from the pool, creating one if necessary
