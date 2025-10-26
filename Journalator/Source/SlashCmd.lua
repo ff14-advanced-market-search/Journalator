@@ -137,7 +137,12 @@ function Journalator.SlashCmd.InvestONator(...)
 
     local resolvedName = itemArg
     if type(itemArg) == "string" then
-      resolvedName = (GetItemInfo and GetItemInfo(itemId)) or (itemArg:match("%[(.-)%]")) or itemArg
+      local itemName = GetItemInfo and GetItemInfo(itemId)
+      if itemName then
+        resolvedName = itemName
+      else
+        resolvedName = itemArg:match("%[(.-)%]") or "Item " .. itemId
+      end
     end
 
     if Journalator.InvestONator.AddItemToPortfolio(portfolioId, itemId, resolvedName, amountValue) then

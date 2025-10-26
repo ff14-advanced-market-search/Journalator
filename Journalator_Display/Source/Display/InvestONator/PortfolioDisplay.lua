@@ -31,7 +31,6 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupPortfolioList()
   
   self.ScrollFrame = scrollFrame
   self.Content = content
-  self.PortfolioFrames = {}
   self.PortfolioFramePool = { free = {}, inUse = {} }
 end
 
@@ -119,7 +118,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupCreatePortfolioDialog
   local createButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
   createButton:SetSize(100, 30)
   createButton:SetPoint("BOTTOMRIGHT", -20, 20)
-  createButton:SetText("Create")
+  createButton:SetText(JOURNALATOR_L_CREATE)
   createButton:SetScript("OnClick", function()
     local name = nameEditBox:GetText()
     local investment = Journalator.InvestONator.ParseGoldInput(investmentEditBox:GetText())
@@ -137,7 +136,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupCreatePortfolioDialog
   local cancelButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
   cancelButton:SetSize(100, 30)
   cancelButton:SetPoint("RIGHT", createButton, "LEFT", -10, 0)
-  cancelButton:SetText("Cancel")
+  cancelButton:SetText(JOURNALATOR_L_CANCEL)
   cancelButton:SetScript("OnClick", function()
     dialog:Hide()
     nameEditBox:SetText("")
@@ -156,7 +155,6 @@ end
 function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   -- Clear existing frames
   self:ReleaseAllPortfolioFrames()
-  self.PortfolioFrames = {}
   
   local portfolios = Journalator.InvestONator.GetAllPortfolios()
   local yOffset = 0
@@ -166,7 +164,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
     if not self.EmptyStateText then
       self.EmptyStateText = self.Content:CreateFontString(nil, "OVERLAY", "GameFontNormal")
       self.EmptyStateText:SetPoint("CENTER", self.Content, "CENTER")
-      self.EmptyStateText:SetText("No portfolios found. Create one to get started!")
+      self.EmptyStateText:SetText(JOURNALATOR_L_NO_PORTFOLIOS_FOUND or "No portfolios found. Create one to get started!")
     end
     self.EmptyStateText:Show()
     self.Content:SetHeight(100)
@@ -208,7 +206,7 @@ end
 ---@return Frame|nil frame The created portfolio frame, or nil if creation failed
 -- Creates a UI frame for a portfolio with header, optional progress summary,
 -- up to five items, and action buttons. The returned frame has `PortfolioId`
--- set and is appended to `self.PortfolioFrames`.
+-- set and is tracked via `self.PortfolioFramePool.inUse`.
 function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portfolioId, portfolio)
   if not portfolioId or not portfolio then
     Journalator.Debug.Message("InvestONator: Invalid portfolio data for frame creation")
@@ -287,7 +285,6 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   end)
   
   frame.PortfolioId = portfolioId
-  table.insert(self.PortfolioFrames, frame)
   
   return frame
 end
@@ -341,7 +338,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
     -- Item input
     local itemLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     itemLabel:SetPoint("TOPLEFT", 20, -60)
-    itemLabel:SetText("Item (link or ID)")
+    itemLabel:SetText(JOURNALATOR_L_ITEM_LINK_OR_ID)
 
     local itemEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
     itemEditBox:SetPoint("TOPLEFT", itemLabel, "BOTTOMLEFT", 0, -5)
