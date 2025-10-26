@@ -22,6 +22,24 @@ local function CreateBasicDialog(parent, width, height)
   return dialog
 end
 
+-- Delete-confirmation popup for removing a portfolio
+if not StaticPopupDialogs["JOURNALATOR_CONFIRM_DELETE_PORTFOLIO"] then
+  StaticPopupDialogs["JOURNALATOR_CONFIRM_DELETE_PORTFOLIO"] = {
+    text = (JOURNALATOR_L_DELETE_PORTFOLIO or "Delete Portfolio") .. " %s?",
+    button1 = YES,
+    button2 = NO,
+    OnAccept = function(self, data)
+      if data and type(data.deleteFunc) == "function" then
+        pcall(data.deleteFunc)
+      end
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+  }
+end
+
 ---Initialize the portfolio display
 -- Initialize the InvestONator portfolio display.
 -- Calls the base OnLoad, sets up the portfolio list and the create-portfolio dialog, and refreshes the displayed portfolios.
