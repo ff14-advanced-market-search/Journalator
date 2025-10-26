@@ -159,6 +159,19 @@ function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   local portfolios = Journalator.InvestONator.GetAllPortfolios()
   local yOffset = 0
   
+  -- Ensure Create button exists (also for empty state)
+  if not self.CreateButton then
+    self.CreateButton = CreateFrame("Button", nil, self, "UIPanelButtonTemplate")
+    self.CreateButton:SetSize(150, 30)
+    self.CreateButton:SetPoint("TOPLEFT", 20, -20)
+    self.CreateButton:SetText(JOURNALATOR_L_CREATE_PORTFOLIO)
+    self.CreateButton:SetScript("OnClick", function()
+      if self.CreateDialog then
+        self.CreateDialog:Show()
+      end
+    end)
+  end
+  
   -- Handle empty state
   if not portfolios or next(portfolios) == nil then
     if not self.EmptyStateText then
@@ -168,6 +181,9 @@ function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
     end
     self.EmptyStateText:Show()
     self.Content:SetHeight(100)
+    if self.CreateButton then
+      self.CreateButton:Show()
+    end
     return
   else
     if self.EmptyStateText then
@@ -186,18 +202,6 @@ function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   -- Update content height
   self.Content:SetHeight(math.max(yOffset, 100))
   
-  -- Show create button if no portfolios exist
-  if not self.CreateButton then
-    self.CreateButton = CreateFrame("Button", nil, self, "UIPanelButtonTemplate")
-    self.CreateButton:SetSize(150, 30)
-    self.CreateButton:SetPoint("TOPLEFT", 20, -20)
-    self.CreateButton:SetText(JOURNALATOR_L_CREATE_PORTFOLIO)
-    self.CreateButton:SetScript("OnClick", function()
-      if self.CreateDialog then
-        self.CreateDialog:Show()
-      end
-    end)
-  end
 end
 
 ---Create a frame for displaying a portfolio
