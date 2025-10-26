@@ -263,7 +263,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   if itemCount >= 5 then
     local moreText = itemsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     moreText:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -yOffset)
-    moreText:SetText("... and more")
+    moreText:SetText(JOURNALATOR_L_AND_MORE or "... and more")
   end
   
   -- Action buttons
@@ -272,8 +272,12 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   deleteButton:SetPoint("BOTTOMRIGHT", -10, 10)
   deleteButton:SetText(JOURNALATOR_L_DELETE_PORTFOLIO)
   deleteButton:SetScript("OnClick", function()
-    Journalator.InvestONator.DeletePortfolio(portfolioId)
-    self:RefreshPortfolioList()
+    StaticPopup_Show("JOURNALATOR_CONFIRM_DELETE_PORTFOLIO", portfolio.name, nil, {
+      deleteFunc = function()
+        Journalator.InvestONator.DeletePortfolio(portfolioId)
+        self:RefreshPortfolioList()
+      end
+    })
   end)
   
   local addItemButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")

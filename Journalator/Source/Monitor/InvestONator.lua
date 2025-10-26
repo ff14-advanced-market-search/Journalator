@@ -35,7 +35,7 @@ end
 ---@param itemID number The ID of the purchased item
 ---@param itemLink string The item link
 ---@param quantity number The quantity purchased
--- Handle an ITEM_PURASED event: record the purchase against any Invest-O-Nator portfolios that contain the item and notify the user.
+-- Handle an ITEM_PURCHASED event: record the purchase against any Invest-O-Nator portfolios that contain the item and notify the user.
 -- For each matching portfolio the function records the purchase, formats the total cost and remaining budget, and emits a user-facing message.
 -- @param itemID number The numeric item identifier.
 -- @param itemLink string|nil The item link string (may be nil or unused).

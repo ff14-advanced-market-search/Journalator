@@ -84,6 +84,9 @@ function Journalator.InvestONator.CreatePortfolio(name, totalInvestment)
     name = name,
     totalInvestment = totalInvestment,
     items = {},
+    -- Synthetic IDs are used only when callers don't provide a real item ID
+    -- (e.g. sentinel 0). Start negative to avoid collisions with real IDs.
+    nextSyntheticItemId = -1,
     createdTime = time()
   }
   
@@ -117,7 +120,29 @@ function Journalator.InvestONator.AddItemToPortfolio(portfolioId, itemId, itemNa
     return false
   end
   
-  JOURNALATOR_INVEST_O_NATOR_DATA.portfolios[portfolioId].items[itemId] = {
+  local portfolio = JOURNALATOR_INVEST_O_NATOR_DATA.portfolios[portfolioId]
+  portfolio.items = portfolio.items or {}
+
+  -- Determine final item ID:
+  -- - If caller provides a non-positive/sentinel value, generate a unique synthetic ID.
+  -- - If caller provides an existing positive ID that already exists, do not overwrite.
+  local finalItemId = tonumber(itemId)
+  if not finalItemId or finalItemId <= 0 then
+    local candidate = portfolio.nextSyntheticItemId or -1
+    -- Ensure uniqueness by stepping further negative if needed
+    while portfolio.items[candidate] ~= nil do
+      candidate = candidate - 1
+    end
+    finalItemId = candidate
+    portfolio.nextSyntheticItemId = candidate - 1
+  else
+    if portfolio.items[finalItemId] ~= nil then
+      Journalator.Debug.Message("InvestONator: Item ID " .. tostring(finalItemId) .. " already exists in portfolio " .. tostring(portfolioId))
+      return false
+    end
+  end
+
+  portfolio.items[finalItemId] = {
     name = itemName,
     targetAmount = targetAmount,
     purchasedAmount = 0,
