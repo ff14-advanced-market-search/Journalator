@@ -144,6 +144,19 @@ function Journalator.InvestONator.CreatePortfolio(name, totalInvestment)
   return portfolioId
 end
 
+---Rename a portfolio
+---@param portfolioId number
+---@param newName string
+---@return boolean
+function Journalator.InvestONator.RenamePortfolio(portfolioId, newName)
+  local portfolio = JOURNALATOR_INVEST_O_NATOR_DATA.portfolios[portfolioId]
+  if not portfolio or not newName or newName == "" then
+    return false
+  end
+  portfolio.name = newName
+  return true
+end
+
 ---Add an item to a portfolio with a target investment amount
 ---@param portfolioId number The ID of the portfolio
 ---@param itemId number The item ID
@@ -202,6 +215,25 @@ function Journalator.InvestONator.AddItemToPortfolio(portfolioId, itemId, itemNa
     purchaseHistory = {}
   }
   
+  return true
+end
+
+---Update a portfolio item's target amount
+---@param portfolioId number
+---@param itemId number
+---@param newTargetAmount number -- copper
+---@return boolean
+function Journalator.InvestONator.UpdateItemTargetAmount(portfolioId, itemId, newTargetAmount)
+  local portfolio = JOURNALATOR_INVEST_O_NATOR_DATA.portfolios[portfolioId]
+  if not portfolio or not portfolio.items[itemId] then
+    return false
+  end
+  if not newTargetAmount or newTargetAmount <= 0 then
+    return false
+  end
+  local item = portfolio.items[itemId]
+  item.targetAmount = newTargetAmount
+  item.remainingAmount = math.max(0, item.targetAmount - (item.purchasedAmount or 0))
   return true
 end
 

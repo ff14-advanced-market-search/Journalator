@@ -377,6 +377,39 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   local header = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
   header:SetPoint("TOPLEFT", 10, -10)
   header:SetText(portfolio.name)
+
+  local editNameButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  editNameButton:SetSize(70, 20)
+  editNameButton:SetPoint("LEFT", header, "RIGHT", 8, 0)
+  editNameButton:SetText("Rename")
+  editNameButton:SetScript("OnClick", function()
+    StaticPopupDialogs["JNR_EDIT_PORTFOLIO_NAME"] = StaticPopupDialogs["JNR_EDIT_PORTFOLIO_NAME"] or {
+      text = "Rename portfolio",
+      button1 = OKAY,
+      button2 = CANCEL,
+      hasEditBox = true,
+      OnShow = function(self)
+        local eb = self.editBox or self.EditBox
+        if eb then
+          eb:SetText(portfolio.name)
+          eb:SetFocus()
+          eb:HighlightText()
+        end
+      end,
+      OnAccept = function(self, data)
+        local eb = self.editBox or self.EditBox
+        local text = eb and eb:GetText() or ""
+        if Journalator.InvestONator.RenamePortfolio(data.portfolioId, text) then
+          data.owner:RefreshPortfolioList()
+        end
+      end,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+    }
+    StaticPopup_Show("JNR_EDIT_PORTFOLIO_NAME", nil, nil, { portfolioId = portfolioId, owner = self })
+  end)
   
   -- Progress info
   local progress = Journalator.InvestONator.GetPortfolioProgress(portfolioId)
@@ -405,7 +438,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   local itemCount = 0
   for itemId, item in pairs(portfolio.items) do
     if itemCount < 5 then -- Show only first 5 items
-      local itemFrame = self:CreateItemFrame(itemId, item, itemsFrame)
+      local itemFrame = self:CreateItemFrame(itemId, item, itemsFrame, portfolioId)
       itemFrame:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -yOffset)
       yOffset = yOffset + 20
       itemCount = itemCount + 1
@@ -454,7 +487,7 @@ end
 -- @param item table Table with fields `name`, `purchasedAmount`, `targetAmount`, and `remainingAmount`.
 -- @param parent Frame The parent frame that will contain the item row; the row width matches the parent's width.
 -- @return Frame The created item frame.
-function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, item, parent)
+function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, item, parent, portfolioId)
   local frame = CreateFrame("Frame", nil, parent)
   frame:SetSize(parent:GetWidth(), 20)
   
@@ -470,6 +503,65 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
     Journalator.InvestONator.FormatGold(item.targetAmount),
     Journalator.InvestONator.FormatGold(item.remainingAmount)
   ))
+
+  -- Edit target button
+  local editBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  editBtn:SetSize(60, 18)
+  editBtn:SetPoint("RIGHT", progressText, "LEFT", -8, 0)
+  editBtn:SetText("Edit")
+  editBtn:SetScript("OnClick", function()
+    StaticPopupDialogs["JNR_EDIT_ITEM_TARGET"] = StaticPopupDialogs["JNR_EDIT_ITEM_TARGET"] or {
+      text = "New target amount (gold)",
+      button1 = OKAY,
+      button2 = CANCEL,
+      hasEditBox = true,
+      OnShow = function(self)
+        local eb = self.editBox or self.EditBox
+        if eb then
+          eb:SetText(tostring(math.floor((item.targetAmount or 0) / 10000)))
+          eb:HighlightText()
+          eb:SetFocus()
+        end
+      end,
+      OnAccept = function(self, data)
+        local eb = self.editBox or self.EditBox
+        local g = eb and tonumber(eb:GetText()) or 0
+        if g > 0 then
+          if Journalator.InvestONator.UpdateItemTargetAmount(data.portfolioId, data.itemId, g * 10000) then
+            data.owner:RefreshPortfolioList()
+          end
+        end
+      end,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+    }
+    StaticPopup_Show("JNR_EDIT_ITEM_TARGET", nil, nil, { portfolioId = portfolioId, itemId = itemId, owner = self:GetParent():GetParent():GetParent() })
+  end)
+
+  -- Remove item button
+  local removeBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  removeBtn:SetSize(60, 18)
+  removeBtn:SetPoint("RIGHT", editBtn, "LEFT", -6, 0)
+  removeBtn:SetText("Remove")
+  removeBtn:SetScript("OnClick", function()
+    StaticPopupDialogs["JNR_DELETE_ITEM"] = StaticPopupDialogs["JNR_DELETE_ITEM"] or {
+      text = "Remove item from portfolio?",
+      button1 = YES,
+      button2 = NO,
+      OnAccept = function(self, data)
+        if Journalator.InvestONator.DeleteItemFromPortfolio(data.portfolioId, data.itemId) then
+          data.owner:RefreshPortfolioList()
+        end
+      end,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+    }
+    StaticPopup_Show("JNR_DELETE_ITEM", nil, nil, { portfolioId = portfolioId, itemId = itemId, owner = self:GetParent():GetParent():GetParent() })
+  end)
   
   return frame
 end
