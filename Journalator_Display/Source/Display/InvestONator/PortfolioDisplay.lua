@@ -326,7 +326,101 @@ end
 -- Currently this function only displays a message that the dialog is not implemented and suggests using the API to add items programmatically.
 -- @param portfolioId number The ID of the portfolio to add items to.
 function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfolioId)
-  -- This would show a dialog to add items to the portfolio
-  -- For now, we'll just show a simple message
-  Journalator.Utilities.Message("Add Item dialog not implemented yet. Use the API to add items programmatically.")
+  if not portfolioId then
+    return
+  end
+
+  if not self.AddItemDialog then
+    local dialog = CreateFrame("Frame", nil, self, "DialogBoxFrameTemplate")
+    dialog:SetSize(420, 260)
+    dialog:SetPoint("CENTER")
+    dialog:Hide()
+
+    dialog.Title:SetText(JOURNALATOR_L_ADD_ITEM or "Add Item")
+
+    -- Item input
+    local itemLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    itemLabel:SetPoint("TOPLEFT", 20, -60)
+    itemLabel:SetText("Item (link or ID)")
+
+    local itemEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
+    itemEditBox:SetPoint("TOPLEFT", itemLabel, "BOTTOMLEFT", 0, -5)
+    itemEditBox:SetSize(360, 30)
+    itemEditBox:SetAutoFocus(false)
+
+    -- Amount input
+    local amountLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    amountLabel:SetPoint("TOPLEFT", itemEditBox, "BOTTOMLEFT", 0, -20)
+    amountLabel:SetText(JOURNALATOR_L_TARGET_AMOUNT or "Target Amount")
+
+    local amountEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
+    amountEditBox:SetPoint("TOPLEFT", amountLabel, "BOTTOMLEFT", 0, -5)
+    amountEditBox:SetSize(360, 30)
+    amountEditBox:SetAutoFocus(false)
+
+    -- Add button
+    local addButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
+    addButton:SetSize(100, 30)
+    addButton:SetPoint("BOTTOMRIGHT", -20, 20)
+    addButton:SetText(JOURNALATOR_L_ADD_ITEM or "Add")
+    addButton:SetScript("OnClick", function()
+      local itemArg = itemEditBox:GetText()
+      local amountText = amountEditBox:GetText()
+      local amountValue = Journalator.InvestONator.ParseGoldInput(amountText)
+
+      if not itemArg or itemArg == "" then
+        Journalator.Utilities.Message("Please enter an item link or numeric ID.")
+        return
+      end
+
+      if not amountValue or amountValue <= 0 then
+        Journalator.Utilities.Message("Invalid amount. Use formats like 100g, 10000s, or 1000000c")
+        return
+      end
+
+      local itemId
+      if type(itemArg) == "string" then
+        itemId = tonumber(itemArg:match("|Hitem:(%d+):"))
+          or tonumber(itemArg:match("item:(%d+)"))
+          or tonumber(itemArg:match("^(%d+)$"))
+      end
+
+      if not itemId then
+        Journalator.Utilities.Message("Invalid item. Provide an item link or numeric item ID (e.g. 3575).")
+        return
+      end
+
+      local resolvedName = (GetItemInfo and GetItemInfo(itemId)) or (itemArg:match("%[(.-)%]")) or tostring(itemArg)
+
+      if Journalator.InvestONator.AddItemToPortfolio(self.ActivePortfolioId or portfolioId, itemId, resolvedName, amountValue) then
+        self:RefreshPortfolioList()
+        dialog:Hide()
+        itemEditBox:SetText("")
+        amountEditBox:SetText("")
+      else
+        Journalator.Utilities.Message("Failed to add item to portfolio. Check your input.")
+      end
+    end)
+
+    -- Cancel button
+    local cancelButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
+    cancelButton:SetSize(100, 30)
+    cancelButton:SetPoint("RIGHT", addButton, "LEFT", -10, 0)
+    cancelButton:SetText(JOURNALATOR_L_CANCEL or "Cancel")
+    cancelButton:SetScript("OnClick", function()
+      dialog:Hide()
+      itemEditBox:SetText("")
+      amountEditBox:SetText("")
+    end)
+
+    self.AddItemDialog = dialog
+    self.ItemEditBox = itemEditBox
+    self.AmountEditBox = amountEditBox
+  end
+
+  self.ActivePortfolioId = portfolioId
+  self.AddItemDialog:Show()
+  if self.ItemEditBox then
+    self.ItemEditBox:SetFocus()
+  end
 end
