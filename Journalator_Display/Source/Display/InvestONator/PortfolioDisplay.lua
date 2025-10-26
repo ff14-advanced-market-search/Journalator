@@ -162,15 +162,10 @@ end
 ---Create a frame for displaying a portfolio
 ---@param portfolioId number The ID of the portfolio
 ---@param portfolio PortfolioData The portfolio data
-<<<<<<< HEAD
--- Creates a UI frame that represents a portfolio, including its header, progress summary, a list of up to five items, and action buttons.
--- The created frame is added to the mixin's PortfolioFrames list and has its `PortfolioId` field set.
--- @param portfolioId number The identifier of the portfolio to display.
--- @param portfolio table The portfolio data (expected fields: `name`, `items`).
--- @return Frame The created portfolio frame with `PortfolioId` set and appended to `self.PortfolioFrames`.
-=======
 ---@return Frame|nil frame The created portfolio frame, or nil if creation failed
->>>>>>> cb84b01 (Auto-commit pending changes before rebase - PR synchronize)
+-- Creates a UI frame for a portfolio with header, optional progress summary,
+-- up to five items, and action buttons. The returned frame has `PortfolioId`
+-- set and is appended to `self.PortfolioFrames`.
 function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portfolioId, portfolio)
   if not portfolioId or not portfolio then
     Journalator.Debug.Message("InvestONator: Invalid portfolio data for frame creation")
@@ -192,8 +187,9 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   
   -- Progress info
   local progress = Journalator.InvestONator.GetPortfolioProgress(portfolioId)
+  local progressText
   if progress then
-    local progressText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    progressText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     progressText:SetPoint("TOPLEFT", header, "BOTTOMLEFT", 0, -10)
     progressText:SetText(string.format(
       "Progress: %s / %s (%d%%) | Remaining: %s | Items: %d/%d",
@@ -208,7 +204,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   
   -- Items list
   local itemsFrame = CreateFrame("Frame", nil, frame)
-  itemsFrame:SetPoint("TOPLEFT", progressText, "BOTTOMLEFT", 0, -10)
+  local itemsAnchor = progressText or header
+  itemsFrame:SetPoint("TOPLEFT", itemsAnchor, "BOTTOMLEFT", 0, -10)
   itemsFrame:SetSize(frame:GetWidth() - 20, 100)
   
   local yOffset = 0

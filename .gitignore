@@ -7,3 +7,8 @@ tmp
 Journalator/Embeds/**
 Journalator_Display/Libs/**
 Journalator_Statistics/Libs/**
+
+
+#Ignore cursor AI rules
+.cursor/rules/codacy.mdc
+.codacy/*
