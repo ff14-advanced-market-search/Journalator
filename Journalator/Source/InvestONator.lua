@@ -363,6 +363,19 @@ function Journalator.InvestONator.DeletePortfolio(portfolioId)
   return false
 end
 
+---Update total investment for a portfolio
+---@param portfolioId number
+---@param newTotal number -- copper
+---@return boolean
+function Journalator.InvestONator.UpdatePortfolioTotal(portfolioId, newTotal)
+  local portfolio = JOURNALATOR_INVEST_O_NATOR_DATA.portfolios[portfolioId]
+  if not portfolio or not newTotal or newTotal <= 0 then
+    return false
+  end
+  portfolio.totalInvestment = newTotal
+  return true
+end
+
 ---Delete an item from a portfolio
 ---@param portfolioId number The ID of the portfolio
 ---@param itemId number The ID of the item to delete

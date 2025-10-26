@@ -427,6 +427,42 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
       progress.totalItems
     ))
   end
+
+  -- Edit total investment button
+  local editTotalBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  editTotalBtn:SetSize(80, 18)
+  editTotalBtn:SetPoint("LEFT", progressText, "RIGHT", 8, 0)
+  editTotalBtn:SetText("Edit Total")
+  editTotalBtn:SetScript("OnClick", function()
+    StaticPopupDialogs["JNR_EDIT_PORTFOLIO_TOTAL"] = StaticPopupDialogs["JNR_EDIT_PORTFOLIO_TOTAL"] or {
+      text = "New portfolio total (gold)",
+      button1 = OKAY,
+      button2 = CANCEL,
+      hasEditBox = true,
+      OnShow = function(self)
+        local eb = self.editBox or self.EditBox
+        if eb then
+          eb:SetText(tostring(math.floor((portfolio.totalInvestment or 0) / 10000)))
+          eb:HighlightText()
+          eb:SetFocus()
+        end
+      end,
+      OnAccept = function(self, data)
+        local eb = self.editBox or self.EditBox
+        local g = eb and tonumber(eb:GetText()) or 0
+        if g > 0 then
+          if Journalator.InvestONator.UpdatePortfolioTotal(data.portfolioId, g * 10000) then
+            data.owner:RefreshPortfolioList()
+          end
+        end
+      end,
+      timeout = 0,
+      whileDead = true,
+      hideOnEscape = true,
+      preferredIndex = 3,
+    }
+    StaticPopup_Show("JNR_EDIT_PORTFOLIO_TOTAL", nil, nil, { portfolioId = portfolioId, owner = self })
+  end)
   
   -- Items list
   local itemsFrame = CreateFrame("Frame", nil, frame)
