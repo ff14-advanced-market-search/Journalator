@@ -60,13 +60,14 @@ function JournalatorMonitorInvestONatorMixin:OnItemPurchased(itemID, itemLink, q
   
   for portfolioId, portfolio in pairs(portfolios) do
     if portfolio.items[itemID] then
-      local item = portfolio.items[itemID]
-      
       -- Record the purchase
       if Journalator.InvestONator.RecordPurchase(portfolioId, itemID, totalAmount, price, quantity) then
-        -- Show notification
-        local remaining = Journalator.InvestONator.FormatGold(item.remainingAmount)
-        
+        -- Re-fetch updated item data after mutation to get fresh remaining amount
+        local updatedPortfolio = Journalator.InvestONator.GetPortfolio and Journalator.InvestONator.GetPortfolio(portfolioId) or portfolio
+        local updatedItem = updatedPortfolio and updatedPortfolio.items and updatedPortfolio.items[itemID]
+        local remainingCopper = updatedItem and updatedItem.remainingAmount or 0
+        local remaining = Journalator.InvestONator.FormatGold(remainingCopper)
+
         Journalator.Utilities.Message(string.format(
           "Invest-o-nator: Purchased %dx %s for %s. Remaining budget: %s",
           quantity,
