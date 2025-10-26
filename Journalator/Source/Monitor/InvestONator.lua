@@ -20,6 +20,14 @@ end
 function JournalatorMonitorInvestONatorMixin:OnEvent(eventName, ...)
   if eventName == "ITEM_PURCHASED" then
     self:OnItemPurchased(...)
+  elseif eventName == "AUCTION_HOUSE_BROWSE_RESULT_UPDATED" then
+    -- Placeholder: browse results updated. Hook here if we need to react to AH scans.
+    -- Intentionally no-op for now to match registered event.
+    return
+  elseif eventName == "AUCTION_HOUSE_CLOSED" then
+    -- Placeholder: AH closed. Use this to clear transient state if added in future.
+    -- Intentionally no-op for now to match registered event.
+    return
   end
 end
 

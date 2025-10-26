@@ -97,12 +97,13 @@ function Journalator.SlashCmd.InvestONator(...)
     
   elseif command == "add" then
     local portfolioId = tonumber(select(2, ...))
-    local itemName = select(3, ...)
+    local itemArg = select(3, ...)
     local amount = select(4, ...)
 
-    if not portfolioId or not itemName or not amount then
-      Journalator.Utilities.Message("Usage: /jnr invest add <portfolioId> <itemName> <amount>")
-      Journalator.Utilities.Message("Example: /jnr invest add 1 \"Iron Ore\" 100000")
+    if not portfolioId or not itemArg or not amount then
+      Journalator.Utilities.Message("Usage: /jnr invest add <portfolioId> <itemLink|itemID> <amount>")
+      Journalator.Utilities.Message("Example: /jnr invest add 1 3575 100000 (3575=Iron Bar)")
+      Journalator.Utilities.Message("Tip: Shift-click an item to paste its link.")
       return
     end
 
@@ -119,11 +120,29 @@ function Journalator.SlashCmd.InvestONator(...)
       return
     end
 
-    -- Get item ID from name (simplified - would need better item lookup)
-    local itemId = 0 -- This would need proper item ID lookup
-    if Journalator.InvestONator.AddItemToPortfolio(portfolioId, itemId, itemName, amountValue) then
+    -- Extract item ID from link, item string, or numeric ID
+    local itemId
+    if type(itemArg) == "string" then
+      itemId = tonumber(itemArg:match("|Hitem:(%d+):"))
+        or tonumber(itemArg:match("item:(%d+)"))
+        or tonumber(itemArg:match("^(%d+)$"))
+    elseif type(itemArg) == "number" then
+      itemId = itemArg
+    end
+
+    if not itemId then
+      Journalator.Utilities.Message("Invalid item. Provide an item link or numeric item ID (e.g. 3575).")
+      return
+    end
+
+    local resolvedName = itemArg
+    if type(itemArg) == "string" then
+      resolvedName = (GetItemInfo and GetItemInfo(itemId)) or (itemArg:match("%[(.-)%]")) or itemArg
+    end
+
+    if Journalator.InvestONator.AddItemToPortfolio(portfolioId, itemId, resolvedName, amountValue) then
       local formattedAmount = Journalator.InvestONator.FormatGold(amountValue)
-      Journalator.Utilities.Message("Added " .. itemName .. " with " .. formattedAmount .. " target to portfolio")
+      Journalator.Utilities.Message("Added " .. resolvedName .. " with " .. formattedAmount .. " target to portfolio")
     else
       Journalator.Utilities.Message("Failed to add item to portfolio. Check your input.")
     end

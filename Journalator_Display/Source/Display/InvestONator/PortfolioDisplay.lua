@@ -32,6 +32,55 @@ function JournalatorInvestONatorPortfolioDisplayMixin:SetupPortfolioList()
   self.ScrollFrame = scrollFrame
   self.Content = content
   self.PortfolioFrames = {}
+  self.PortfolioFramePool = { free = {}, inUse = {} }
+end
+
+-- Acquire a reusable portfolio frame from the pool, creating one if necessary
+function JournalatorInvestONatorPortfolioDisplayMixin:AcquirePortfolioFrame()
+  if not self.PortfolioFramePool then
+    self.PortfolioFramePool = { free = {}, inUse = {} }
+  end
+  local frame = table.remove(self.PortfolioFramePool.free) or CreateFrame("Frame", nil, self.Content)
+  frame:SetParent(self.Content)
+  -- Clear previous contents and anchors to avoid stacking/leaks
+  for _, child in ipairs({ frame:GetChildren() }) do
+    child:Hide()
+    child:SetParent(nil)
+  end
+  for _, region in ipairs({ frame:GetRegions() }) do
+    region:Hide()
+    region:SetParent(nil)
+  end
+  frame:ClearAllPoints()
+  frame:Show()
+  table.insert(self.PortfolioFramePool.inUse, frame)
+  return frame
+end
+
+-- Release all in-use portfolio frames back to the pool
+function JournalatorInvestONatorPortfolioDisplayMixin:ReleaseAllPortfolioFrames()
+  if not self.PortfolioFramePool then
+    return
+  end
+  for i = 1, #self.PortfolioFramePool.inUse do
+    local frame = self.PortfolioFramePool.inUse[i]
+    if frame then
+      -- Hide, detach and clear contents to prepare for reuse
+      frame:Hide()
+      frame:ClearAllPoints()
+      for _, child in ipairs({ frame:GetChildren() }) do
+        child:Hide()
+        child:SetParent(nil)
+      end
+      for _, region in ipairs({ frame:GetRegions() }) do
+        region:Hide()
+        region:SetParent(nil)
+      end
+      frame:SetParent(nil)
+      table.insert(self.PortfolioFramePool.free, frame)
+    end
+  end
+  self.PortfolioFramePool.inUse = {}
 end
 
 -- Creates and configures the portfolio creation dialog used to add new portfolios.
@@ -106,13 +155,7 @@ end
 -- Ensures a "Create" button exists to open the portfolio creation dialog.
 function JournalatorInvestONatorPortfolioDisplayMixin:RefreshPortfolioList()
   -- Clear existing frames
-  for _, frame in pairs(self.PortfolioFrames) do
-    if frame and frame:IsValid() then
-      frame:Hide()
-      frame:SetParent(nil)
-      frame:ClearAllPoints()
-    end
-  end
+  self:ReleaseAllPortfolioFrames()
   self.PortfolioFrames = {}
   
   local portfolios = Journalator.InvestONator.GetAllPortfolios()
@@ -172,7 +215,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
     return nil
   end
   
-  local frame = CreateFrame("Frame", nil, self.Content)
+  local frame = self:AcquirePortfolioFrame()
   if not frame then
     Journalator.Debug.Message("InvestONator: Failed to create portfolio frame")
     return nil
