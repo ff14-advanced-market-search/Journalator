@@ -451,7 +451,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
   end
 
   if not self.AddItemDialog then
-    local dialog = CreateBasicDialog(self, 420, 300)
+    local dialog = CreateBasicDialog(self, 420, 320)
 
     dialog.Title:SetText(JOURNALATOR_L_ADD_ITEM or "Add Item")
 
@@ -541,7 +541,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
     -- Add button
     local addButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
     addButton:SetSize(100, 30)
-    addButton:SetPoint("BOTTOMRIGHT", -20, 20)
+    -- Place just below the amount field, not at dialog bottom, to avoid overlap
+    addButton:SetPoint("TOPRIGHT", amountEditBox, "BOTTOMRIGHT", 0, -10)
     addButton:SetText(JOURNALATOR_L_ADD_ITEM or "Add")
     addButton:SetScript("OnClick", function()
       local itemArg = itemEditBox:GetText()
