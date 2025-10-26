@@ -129,6 +129,10 @@ end
 ---Handle the display being shown
 ---Refreshes the portfolio list
 function JournalatorInvestONatorPortfolioDisplayMixin:OnShow()
+  -- Re-sync portfolio purchases from invoices using the active time filter
+  local root = FindRootWithFilters(self)
+  local fromTime = root and root.Filters and root.Filters:GetTimeForRange() or 0
+  Journalator.InvestONator.RecalculateAllPurchases(fromTime)
   self:RefreshPortfolioList()
 end
 

@@ -59,6 +59,38 @@ function Journalator.InvestONator.Initialize()
   end
 end
 
+---Recalculate purchased totals from Journalator logs
+---@param fromTime number|nil Minimum timestamp to include (defaults to 0 for all time)
+function Journalator.InvestONator.RecalculateAllPurchases(fromTime)
+  fromTime = fromTime or 0
+
+  -- Build a lookup of total spent per itemID from buyer invoices
+  local spentByItemId = {}
+  local invoices = Journalator.Archiving.GetRange(fromTime, "Invoices")
+  for _, inv in ipairs(invoices) do
+    if inv.time >= fromTime and inv.invoiceType ~= "seller" then
+      local itemId = nil
+      if inv.itemLink then
+        itemId = tonumber(string.match(inv.itemLink or "", "|Hitem:(%d+):"))
+      end
+      if itemId then
+        spentByItemId[itemId] = (spentByItemId[itemId] or 0) + (inv.value or 0)
+      end
+    end
+  end
+
+  -- Apply totals to any portfolio items that reference the same itemID
+  for _, portfolio in pairs(JOURNALATOR_INVEST_O_NATOR_DATA.portfolios or {}) do
+    for itemId, item in pairs(portfolio.items or {}) do
+      if type(itemId) == "number" and itemId > 0 then
+        local spent = spentByItemId[itemId] or 0
+        item.purchasedAmount = spent
+        item.remainingAmount = math.max(0, (item.targetAmount or 0) - item.purchasedAmount)
+      end
+    end
+  end
+end
+
 ---Create a new investment portfolio
 ---@param name string The name of the portfolio
 ---@param totalInvestment number The total investment budget in copper
