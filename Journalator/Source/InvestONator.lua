@@ -326,29 +326,34 @@ function Journalator.InvestONator.ParseGoldInput(input)
   if not input or input == "" then
     return 0
   end
-  
-  -- Trim whitespace
+
+  -- Trim
   input = input:match("^%s*(.-)%s*$")
-  
-  local amount = 0
-  
-  -- Try to parse gold/silver/copper format (e.g., "100g 50s 25c" or "100g50s25c")
-  local gold, silver, copper = input:match("(%d*)g%s*(%d*)s%s*(%d*)c")
-  
-  if gold or silver or copper then
-    amount = amount + (tonumber(gold) or 0) * 10000
-    amount = amount + (tonumber(silver) or 0) * 100
-    amount = amount + (tonumber(copper) or 0)
-  else
-    -- Try to parse as a single number (assume copper)
-    local numValue = tonumber(input)
-    if numValue then
-      amount = numValue
-    else
-      Journalator.Debug.Message("InvestONator: Invalid gold input format: " .. tostring(input))
-      return 0
+
+  -- Accept simple numbers and treat them as GOLD (not copper)
+  local plainNumber = tonumber(input)
+  if plainNumber then
+    return plainNumber * 10000
+  end
+
+  -- Tokenize segments like "100g", "50s", "25c" in any order; case-insensitive; spaces optional
+  local gold = 0
+  local silver = 0
+  local copper = 0
+
+  for value, suffix in string.gmatch(input, "(%d+)%s*([gGsScC]?)") do
+    local n = tonumber(value) or 0
+    if suffix == "g" or suffix == "G" or suffix == "" then
+      -- Default unit is gold if no suffix provided inside a composite string
+      gold = gold + n
+    elseif suffix == "s" or suffix == "S" then
+      silver = silver + n
+    elseif suffix == "c" or suffix == "C" then
+      copper = copper + n
     end
   end
-  
-  return amount
+
+  -- Normalize and compute total copper
+  local total = gold * 10000 + silver * 100 + copper
+  return total
 end

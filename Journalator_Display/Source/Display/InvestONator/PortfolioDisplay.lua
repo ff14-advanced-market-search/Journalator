@@ -464,7 +464,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
     -- Suggestions list under the item box
     local suggestionsFrame = CreateFrame("Frame", nil, dialog)
     suggestionsFrame:SetPoint("TOPLEFT", itemEditBox, "BOTTOMLEFT", 0, -2)
-    suggestionsFrame:SetSize(360, 120)
+    suggestionsFrame:SetSize(360, 108)
     suggestionsFrame:Hide()
 
     local suggestionsBG = suggestionsFrame:CreateTexture(nil, "BACKGROUND")
@@ -481,7 +481,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
       local b = CreateFrame("Button", nil, suggestionsFrame, "UIPanelButtonTemplate")
       b:SetSize(340, 20)
       if #suggestionsFrame.buttons == 0 then
-        b:SetPoint("TOPLEFT", 10, -8)
+        b:SetPoint("TOPLEFT", 10, -6)
       else
         b:SetPoint("TOPLEFT", suggestionsFrame.buttons[#suggestionsFrame.buttons], "BOTTOMLEFT", 0, -4)
       end
@@ -526,12 +526,13 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
     -- Amount input
     local amountLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
     amountLabel:SetPoint("TOPLEFT", suggestionsFrame, "BOTTOMLEFT", 0, -10)
-    amountLabel:SetText(JOURNALATOR_L_TARGET_AMOUNT or "Target Amount")
+    amountLabel:SetText((JOURNALATOR_L_TARGET_AMOUNT or "Target Amount") .. " (gold)")
 
     local amountEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
     amountEditBox:SetPoint("TOPLEFT", amountLabel, "BOTTOMLEFT", 0, -5)
     amountEditBox:SetSize(360, 30)
     amountEditBox:SetAutoFocus(false)
+    amountEditBox:SetNumeric(true)
 
     -- Add button
     local addButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
@@ -549,7 +550,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
       end
 
       if not amountValue or amountValue <= 0 then
-        Journalator.Utilities.Message("Invalid amount. Use formats like 100g, 10000s, or 1000000c")
+        Journalator.Utilities.Message("Invalid amount. Enter a gold number, e.g. 100")
         return
       end
 
