@@ -74,7 +74,11 @@ function JournalatorInvestONatorItemsDataProviderMixin:Refresh()
   end
 
   local results = {}
-  for itemId, item in pairs(portfolio.items or {}) do
+  -- Defensive: ensure items is a table
+  local items = portfolio.items or {}
+  local any = false
+  for itemId, item in pairs(items) do
+    any = true
     table.insert(results, {
       itemName = item.name,
       target = item.targetAmount,
@@ -82,6 +86,18 @@ function JournalatorInvestONatorItemsDataProviderMixin:Refresh()
       remaining = item.remainingAmount,
       index = itemId,
       selected = (self.IsSelected and self:IsSelected(itemId)) or false,
+    })
+  end
+
+  if not any then
+    -- Show a placeholder so we can verify the table renders rows
+    table.insert(results, {
+      itemName = "No items in this portfolio",
+      target = 0,
+      spent = 0,
+      remaining = 0,
+      index = 0,
+      selected = false,
     })
   end
 
@@ -111,10 +127,8 @@ end
 
 -- Override to be robust to where this provider is attached in the view tree
 function JournalatorInvestONatorItemsDataProviderMixin:Filter(item)
-  local root = FindRootWithFilters(self)
-  if root and root.Filters then
-    return root.Filters:Filter(item)
-  end
+  -- Invest-o-nator items are portfolio configuration entries, not archived log
+  -- rows; they aren't affected by date/character/realm filters. Always show.
   return true
 end
 

@@ -470,6 +470,23 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
     }
     StaticPopup_Show("JNR_EDIT_PORTFOLIO_NAME", nil, nil, { portfolioId = portfolioId, owner = self })
   end)
+
+  -- Delete portfolio button (next to Rename)
+  local deleteTopButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  deleteTopButton:SetSize(90, 20)
+  deleteTopButton:SetPoint("LEFT", editNameButton, "RIGHT", 8, 0)
+  deleteTopButton:SetText(JOURNALATOR_L_DELETE_PORTFOLIO or "Delete")
+  deleteTopButton:SetScript("OnClick", function()
+    StaticPopup_Show("JOURNALATOR_CONFIRM_DELETE_PORTFOLIO", portfolio.name, nil, {
+      deleteFunc = function()
+        Journalator.InvestONator.DeletePortfolio(portfolioId)
+        if self.ActivePortfolioId == portfolioId then
+          self.ActivePortfolioId = nil
+        end
+        self:RefreshPortfolioList()
+      end
+    })
+  end)
   
   -- Progress info
   local progress = Journalator.InvestONator.GetPortfolioProgress(portfolioId)
@@ -532,6 +549,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   local list = CreateFrame("Frame", nil, frame, "AuctionatorResultsListingTemplate")
   list:SetPoint("TOPLEFT", listInset, "TOPLEFT", 5, -20)
   list:SetPoint("BOTTOMRIGHT", listInset, "BOTTOMRIGHT", -5, 5)
+  -- ensure the child ResultsListing frame is visible
+  list:Show()
 
   if not frame.ItemsProvider then
     local providerFrame = CreateFrame("Frame", nil, frame)
@@ -545,25 +564,29 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   -- Always (re)bind the listing to ensure headers render after refresh
   list:Init(frame.ItemsProvider)
   frame.ItemsProvider:SetPortfolioId(portfolioId)
+  -- explicitly refresh to populate rows
   frame.ItemsProvider:Refresh()
+
+  -- Empty state helper text when no items exist yet
+  local hasItems = false
+  if portfolio.items then
+    for _ in pairs(portfolio.items) do hasItems = true break end
+  end
+  if not hasItems then
+    if not frame.EmptyLabel then
+      frame.EmptyLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      frame.EmptyLabel:SetPoint("TOP", listInset, "TOP", 0, -8)
+      frame.EmptyLabel:SetText("No items yet. Click 'Add Item' to start.")
+    end
+    frame.EmptyLabel:Show()
+  elseif frame.EmptyLabel then
+    frame.EmptyLabel:Hide()
+  end
   
-  -- Action buttons
-  local deleteButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-  deleteButton:SetSize(100, 25)
-  deleteButton:SetPoint("BOTTOMRIGHT", -10, 10)
-  deleteButton:SetText(JOURNALATOR_L_DELETE_PORTFOLIO)
-  deleteButton:SetScript("OnClick", function()
-    StaticPopup_Show("JOURNALATOR_CONFIRM_DELETE_PORTFOLIO", portfolio.name, nil, {
-      deleteFunc = function()
-        Journalator.InvestONator.DeletePortfolio(portfolioId)
-        self:RefreshPortfolioList()
-      end
-    })
-  end)
-  
+  -- Action button: Add item (kept near lower right)
   local addItemButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   addItemButton:SetSize(100, 25)
-  addItemButton:SetPoint("RIGHT", deleteButton, "LEFT", -10, 0)
+  addItemButton:SetPoint("BOTTOMRIGHT", -10, 10)
   addItemButton:SetText(JOURNALATOR_L_ADD_ITEM)
   addItemButton:SetScript("OnClick", function()
     self:ShowAddItemDialog(portfolioId)
