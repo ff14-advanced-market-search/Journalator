@@ -431,7 +431,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
     return nil
   end
   
-  frame:SetSize(self.Content:GetWidth() - 40, 200)
+  frame:SetSize(self.Content:GetWidth() - 40, 420)
   
   -- Portfolio header
   local header = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
@@ -524,28 +524,28 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
     StaticPopup_Show("JNR_EDIT_PORTFOLIO_TOTAL", nil, nil, { portfolioId = portfolioId, owner = self })
   end)
   
-  -- Items list
-  local itemsFrame = CreateFrame("Frame", nil, frame)
-  local itemsAnchor = progressText or header
-  itemsFrame:SetPoint("TOPLEFT", itemsAnchor, "BOTTOMLEFT", 0, -10)
-  itemsFrame:SetSize(frame:GetWidth() - 20, 100)
-  
-  local yOffset = 0
-  local itemCount = 0
-  for itemId, item in pairs(portfolio.items) do
-    if itemCount < 5 then -- Show only first 5 items
-      local itemFrame = self:CreateItemFrame(itemId, item, itemsFrame, portfolioId)
-      itemFrame:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -yOffset)
-      yOffset = yOffset + 20
-      itemCount = itemCount + 1
-    end
+  -- Items listing (table)
+  local listInset = CreateFrame("Frame", nil, frame, "AuctionatorInsetDarkTemplate")
+  listInset:SetPoint("TOPLEFT", progressText or header, "BOTTOMLEFT", -5, -14)
+  listInset:SetPoint("BOTTOMRIGHT", -10, 80)
+
+  local list = CreateFrame("Frame", nil, frame, "AuctionatorResultsListingTemplate")
+  list:SetPoint("TOPLEFT", listInset, "TOPLEFT", 5, -20)
+  list:SetPoint("BOTTOMRIGHT", listInset, "BOTTOMRIGHT", -5, 5)
+
+  if not frame.ItemsProvider then
+    local providerFrame = CreateFrame("Frame", nil, frame)
+    Mixin(providerFrame, JournalatorInvestONatorItemsDataProviderMixin)
+    providerFrame:OnLoad()
+    providerFrame.owner = self
+    frame.ItemsProvider = providerFrame
+  else
+    frame.ItemsProvider.owner = self
   end
-  
-  if itemCount >= 5 then
-    local moreText = itemsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    moreText:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -yOffset)
-    moreText:SetText(JOURNALATOR_L_AND_MORE or "... and more")
-  end
+  -- Always (re)bind the listing to ensure headers render after refresh
+  list:Init(frame.ItemsProvider)
+  frame.ItemsProvider:SetPortfolioId(portfolioId)
+  frame.ItemsProvider:Refresh()
   
   -- Action buttons
   local deleteButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
