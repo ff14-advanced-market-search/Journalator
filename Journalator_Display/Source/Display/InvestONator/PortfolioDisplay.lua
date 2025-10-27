@@ -531,26 +531,41 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   itemsFrame:SetSize(frame:GetWidth() - 20, 100)
   
   local yOffset = 0
-  local itemCount = 0
+  -- Build a sortable array of items, then sort alphabetically (case-insensitive)
+  local sortedItems = {}
   for itemId, item in pairs(portfolio.items) do
-    if itemCount < 5 then -- Show only first 5 items
-      local itemFrame = self:CreateItemFrame(itemId, item, itemsFrame, portfolioId)
-      itemFrame:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -yOffset)
-      yOffset = yOffset + 20
-      itemCount = itemCount + 1
-    end
+    table.insert(sortedItems, { id = itemId, item = item })
   end
-  
-  if itemCount >= 5 then
-    local moreText = itemsFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    moreText:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -yOffset)
-    moreText:SetText(JOURNALATOR_L_AND_MORE or "... and more")
+  table.sort(sortedItems, function(a, b)
+    local an = a.item and a.item.name or ""
+    local bn = b.item and b.item.name or ""
+    return string.lower(an) < string.lower(bn)
+  end)
+
+  for _, entry in ipairs(sortedItems) do
+    local itemFrame = self:CreateItemFrame(entry.id, entry.item, itemsFrame, portfolioId)
+    itemFrame:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -yOffset)
+    yOffset = yOffset + 20
   end
+
+  -- Resize the items container and the overall frame to fit all rows and action buttons
+  itemsFrame:SetHeight(yOffset)
+  local baseHeight = 110 -- header + progress + spacing
+  local buttonsHeight = 40
+  frame:SetHeight(math.max(baseHeight + yOffset + buttonsHeight, 200))
   
-  -- Action buttons
+  -- Action buttons (placed on header row, to the right of Rename)
+  local addItemButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  addItemButton:SetSize(100, 25)
+  addItemButton:SetPoint("LEFT", editNameButton, "RIGHT", 10, 0)
+  addItemButton:SetText(JOURNALATOR_L_ADD_ITEM)
+  addItemButton:SetScript("OnClick", function()
+    self:ShowAddItemDialog(portfolioId)
+  end)
+
   local deleteButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   deleteButton:SetSize(100, 25)
-  deleteButton:SetPoint("BOTTOMRIGHT", -10, 10)
+  deleteButton:SetPoint("LEFT", addItemButton, "RIGHT", 10, 0)
   deleteButton:SetText(JOURNALATOR_L_DELETE_PORTFOLIO)
   deleteButton:SetScript("OnClick", function()
     StaticPopup_Show("JOURNALATOR_CONFIRM_DELETE_PORTFOLIO", portfolio.name, nil, {
@@ -559,14 +574,6 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
         self:RefreshPortfolioList()
       end
     })
-  end)
-  
-  local addItemButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
-  addItemButton:SetSize(100, 25)
-  addItemButton:SetPoint("RIGHT", deleteButton, "LEFT", -10, 0)
-  addItemButton:SetText(JOURNALATOR_L_ADD_ITEM)
-  addItemButton:SetScript("OnClick", function()
-    self:ShowAddItemDialog(portfolioId)
   end)
   
   frame.PortfolioId = portfolioId
