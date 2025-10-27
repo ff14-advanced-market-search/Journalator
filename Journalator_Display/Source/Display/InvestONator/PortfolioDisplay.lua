@@ -524,13 +524,12 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
     StaticPopup_Show("JNR_EDIT_PORTFOLIO_TOTAL", nil, nil, { portfolioId = portfolioId, owner = self })
   end)
   
-  -- Items list
+  -- Items list with pagination
   local itemsFrame = CreateFrame("Frame", nil, frame)
   local itemsAnchor = progressText or header
   itemsFrame:SetPoint("TOPLEFT", itemsAnchor, "BOTTOMLEFT", 0, -10)
   itemsFrame:SetSize(frame:GetWidth() - 20, 100)
-  
-  local yOffset = 0
+
   -- Build a sortable array of items, then sort alphabetically (case-insensitive)
   local sortedItems = {}
   for itemId, item in pairs(portfolio.items) do
@@ -542,17 +541,88 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
     return string.lower(an) < string.lower(bn)
   end)
 
-  for _, entry in ipairs(sortedItems) do
-    local itemFrame = self:CreateItemFrame(entry.id, entry.item, itemsFrame, portfolioId)
-    itemFrame:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -yOffset)
-    yOffset = yOffset + 20
+  local rows = {}
+  local rowHeight = 20
+  local itemsPerPage = 12
+  local currentPage = 1
+
+  local pageLabel = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  pageLabel:SetPoint("TOPRIGHT", itemsFrame, "BOTTOMRIGHT", -110, -6)
+
+  local nextButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  nextButton:SetSize(70, 20)
+  nextButton:SetPoint("RIGHT", pageLabel, "LEFT", -8, 0)
+  nextButton:SetText(NEXT)
+
+  local prevButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  prevButton:SetSize(70, 20)
+  prevButton:SetPoint("RIGHT", nextButton, "LEFT", -8, 0)
+  prevButton:SetText(PREVIOUS)
+
+  local function acquireRow(index)
+    if rows[index] then return rows[index] end
+    local r = self:CreateItemFrame(0, { name = "", purchasedAmount = 0, targetAmount = 0, remainingAmount = 0 }, itemsFrame, portfolioId)
+    r:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -(index - 1) * rowHeight)
+    rows[index] = r
+    return r
   end
 
-  -- Resize the items container and the overall frame to fit all rows and action buttons
-  itemsFrame:SetHeight(yOffset)
-  local baseHeight = 110 -- header + progress + spacing
-  local buttonsHeight = 40
-  frame:SetHeight(math.max(baseHeight + yOffset + buttonsHeight, 200))
+  local function renderPage()
+    local total = #sortedItems
+    local totalPages = math.max(1, math.ceil(total / itemsPerPage))
+    if currentPage > totalPages then currentPage = totalPages end
+    if currentPage < 1 then currentPage = 1 end
+
+    local startIndex = (currentPage - 1) * itemsPerPage + 1
+    local endIndex = math.min(startIndex + itemsPerPage - 1, total)
+    local displayCount = endIndex >= startIndex and (endIndex - startIndex + 1) or 0
+
+    -- Populate rows
+    local rowIndex = 1
+    for i = startIndex, endIndex do
+      local entry = sortedItems[i]
+      local r = acquireRow(rowIndex)
+      -- Rebuild the row with real data
+      for _, child in ipairs({ r:GetChildren() }) do child:Hide() end
+      for _, region in ipairs({ r:GetRegions() }) do region:Hide() end
+      r:Hide()
+      local filled = self:CreateItemFrame(entry.id, entry.item, itemsFrame, portfolioId)
+      filled:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -(rowIndex - 1) * rowHeight)
+      rows[rowIndex] = filled
+      filled:Show()
+      rowIndex = rowIndex + 1
+    end
+    -- Hide extra rows
+    local idx = rowIndex
+    while rows[idx] do
+      rows[idx]:Hide()
+      idx = idx + 1
+    end
+
+    -- Resize container
+    itemsFrame:SetHeight(displayCount * rowHeight)
+
+    -- Update page controls
+    pageLabel:SetText(string.format("%d / %d", currentPage, totalPages))
+    prevButton:SetEnabled(currentPage > 1)
+    nextButton:SetEnabled(currentPage < totalPages)
+
+    -- Adjust overall frame height
+    local baseHeight = 130 -- header + progress + spacing
+    local controlsHeight = 30
+    frame:SetHeight(math.max(baseHeight + itemsFrame:GetHeight() + controlsHeight, 220))
+  end
+
+  prevButton:SetScript("OnClick", function()
+    currentPage = currentPage - 1
+    renderPage()
+  end)
+  nextButton:SetScript("OnClick", function()
+    currentPage = currentPage + 1
+    renderPage()
+  end)
+
+  renderPage()
   
   -- Action buttons (placed on header row, to the right of Rename)
   local addItemButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
@@ -575,6 +645,14 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
       end
     })
   end)
+
+  -- Reposition pagination controls at the top next to Delete Portfolio
+  pageLabel:ClearAllPoints()
+  pageLabel:SetPoint("LEFT", deleteButton, "RIGHT", 10, 0)
+  prevButton:ClearAllPoints()
+  prevButton:SetPoint("LEFT", pageLabel, "RIGHT", 10, 0)
+  nextButton:ClearAllPoints()
+  nextButton:SetPoint("LEFT", prevButton, "RIGHT", 6, 0)
   
   frame.PortfolioId = portfolioId
   
