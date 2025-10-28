@@ -1,6 +1,12 @@
 ---@class JournalatorInvestONatorPortfolioDisplayMixin
 JournalatorInvestONatorPortfolioDisplayMixin = {}
 
+-- Format a copper amount as gold with 2 decimal places, e.g. 1144.75g
+local function FormatGoldDecimal(amount)
+  local gold = (amount or 0) / 10000
+  return string.format("%.2fg", gold)
+end
+
 -- Create a very simple, cross-client dialog frame without relying on Blizzard
 -- templates that may not exist on all versions (e.g. DialogBoxFrameTemplate).
 local function CreateBasicDialog(parent, width, height)
@@ -679,7 +685,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   
   local progressText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   -- Reduce horizontal whitespace by constraining the effective row width
-  local desiredRowWidth = 700 -- keep names left, costs right, but closer together
+  local desiredRowWidth = 560 -- names up to ~67 chars; bring amounts closer
   local parentWidth = parent:GetWidth() or desiredRowWidth
   local rightOffset = 0
   if parentWidth > desiredRowWidth then
@@ -687,10 +693,10 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   end
   progressText:SetPoint("RIGHT", rightOffset, 0)
   progressText:SetText(string.format(
-    "%s / %s (%s remaining)",
-    Journalator.InvestONator.FormatGold(item.purchasedAmount),
-    Journalator.InvestONator.FormatGold(item.targetAmount),
-    Journalator.InvestONator.FormatGold(item.remainingAmount)
+    "%s / %s (%s)",
+    FormatGoldDecimal(item.purchasedAmount),
+    FormatGoldDecimal(item.targetAmount),
+    FormatGoldDecimal(item.remainingAmount)
   ))
 
   -- Subtle separator line to delineate rows
