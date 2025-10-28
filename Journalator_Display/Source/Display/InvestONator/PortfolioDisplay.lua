@@ -686,6 +686,13 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
     Journalator.InvestONator.FormatGold(item.remainingAmount)
   ))
 
+  -- Subtle separator line to delineate rows
+  local separator = frame:CreateTexture(nil, "BACKGROUND")
+  separator:SetColorTexture(1, 1, 1, 0.08)
+  separator:SetHeight(1)
+  separator:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+  separator:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+
   -- Edit target button
   local editBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   editBtn:SetSize(60, 18)
