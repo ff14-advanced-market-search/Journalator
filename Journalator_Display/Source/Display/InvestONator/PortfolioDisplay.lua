@@ -637,6 +637,58 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   prevButton:SetPoint("RIGHT", nextButton, "LEFT", -8, 0)
   prevButton:SetText(PREVIOUS)
 
+  -- Export to Auctionator button
+  local exportButton = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
+  exportButton:SetSize(160, 20)
+  exportButton:SetPoint("LEFT", nextButton, "RIGHT", 10, 0)
+  exportButton:SetText("Export to Auctionator")
+
+  local function ShowExportDialog(text)
+    if not self.ExportDialog then
+      local dialog = CreateBasicDialog(self, 520, 140)
+      dialog.Title:SetText("Auctionator Import List")
+
+      local help = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+      help:SetPoint("TOPLEFT", 20, -40)
+      help:SetText("Copy and paste into Auctionator Shopping List import")
+
+      local input = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
+      input:SetPoint("TOPLEFT", help, "BOTTOMLEFT", 0, -8)
+      input:SetSize(480, 28)
+      input:SetAutoFocus(true)
+      input:SetMultiLine(false)
+
+      local closeBtn = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
+      closeBtn:SetSize(80, 22)
+      closeBtn:SetPoint("BOTTOMRIGHT", -20, 16)
+      closeBtn:SetText(OKAY)
+      closeBtn:SetScript("OnClick", function()
+        dialog:Hide()
+      end)
+
+      dialog.Input = input
+      self.ExportDialog = dialog
+    end
+
+    self.ExportDialog:Show()
+    self.ExportDialog.Input:SetText(text or "")
+    self.ExportDialog.Input:HighlightText()
+    self.ExportDialog.Input:SetFocus()
+  end
+
+  exportButton:SetScript("OnClick", function()
+    local listName = portfolio.name or "Portfolio"
+    local parts = { listName }
+    -- Use full sorted item list
+    for _, entry in ipairs(sortedItems) do
+      if entry.item and entry.item.name then
+        table.insert(parts, entry.item.name)
+      end
+    end
+    local exportText = table.concat(parts, "^")
+    ShowExportDialog(exportText)
+  end)
+
   local function acquireRow(index)
     if rows[index] then return rows[index] end
     local r = self:CreateItemFrame(0, { name = "", purchasedAmount = 0, targetAmount = 0, remainingAmount = 0 }, itemsFrame, portfolioId)
