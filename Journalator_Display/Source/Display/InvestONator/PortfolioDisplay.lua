@@ -542,7 +542,7 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   end)
 
   local rows = {}
-  local rowHeight = 20
+  local rowHeight = 18
   local itemsPerPage = 12
   local currentPage = 1
 
@@ -678,7 +678,14 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   itemName:SetText(item.name)
   
   local progressText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  progressText:SetPoint("RIGHT", 0, 0)
+  -- Reduce horizontal whitespace by constraining the effective row width
+  local desiredRowWidth = 700 -- keep names left, costs right, but closer together
+  local parentWidth = parent:GetWidth() or desiredRowWidth
+  local rightOffset = 0
+  if parentWidth > desiredRowWidth then
+    rightOffset = desiredRowWidth - parentWidth -- negative value shifts right anchor left
+  end
+  progressText:SetPoint("RIGHT", rightOffset, 0)
   progressText:SetText(string.format(
     "%s / %s (%s remaining)",
     Journalator.InvestONator.FormatGold(item.purchasedAmount),
@@ -688,10 +695,10 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
 
   -- Subtle separator line to delineate rows
   local separator = frame:CreateTexture(nil, "BACKGROUND")
-  separator:SetColorTexture(1, 1, 1, 0.08)
+  separator:SetColorTexture(1, 1, 1, 0.06)
   separator:SetHeight(1)
   separator:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
-  separator:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+  separator:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 0)
 
   -- Edit target button
   local editBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
