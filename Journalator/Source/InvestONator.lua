@@ -67,6 +67,9 @@ function Journalator.InvestONator.RecalculateAllPurchases(fromTime)
   -- Build a lookup of total spent per itemID and by item name (fallback)
   local spentByItemId = {}
   local spentByNameLower = {}
+  -- Also build detailed purchase histories for stats (unit price + quantity)
+  local purchasesByItemId = {}
+  local purchasesByNameLower = {}
   local invoices = Journalator.Archiving.GetRange(fromTime, "Invoices")
   for _, inv in ipairs(invoices) do
     if inv.time >= fromTime and inv.invoiceType ~= "seller" then
@@ -80,12 +83,30 @@ function Journalator.InvestONator.RecalculateAllPurchases(fromTime)
       if itemLink then
         itemId = tonumber(string.match(itemLink or "", "|Hitem:(%d+):"))
       end
+      local amount = inv.value or 0
+      local count = (inv.count and inv.count > 0) and inv.count or 1
+      local unitPrice = math.floor(amount / count)
+
       if itemId then
-        spentByItemId[itemId] = (spentByItemId[itemId] or 0) + (inv.value or 0)
+        spentByItemId[itemId] = (spentByItemId[itemId] or 0) + amount
+        purchasesByItemId[itemId] = purchasesByItemId[itemId] or {}
+        table.insert(purchasesByItemId[itemId], {
+          amount = amount,
+          time = inv.time or time(),
+          price = unitPrice,
+          quantity = count,
+        })
       end
       if inv.itemName then
         local key = string.lower(tostring(inv.itemName))
-        spentByNameLower[key] = (spentByNameLower[key] or 0) + (inv.value or 0)
+        spentByNameLower[key] = (spentByNameLower[key] or 0) + amount
+        purchasesByNameLower[key] = purchasesByNameLower[key] or {}
+        table.insert(purchasesByNameLower[key], {
+          amount = amount,
+          time = inv.time or time(),
+          price = unitPrice,
+          quantity = count,
+        })
       end
     end
   end
@@ -103,6 +124,18 @@ function Journalator.InvestONator.RecalculateAllPurchases(fromTime)
       if spent and spent > 0 then
         item.purchasedAmount = spent
         item.remainingAmount = math.max(0, (item.targetAmount or 0) - item.purchasedAmount)
+        -- Attach purchase history for stats
+        local history = nil
+        if type(itemId) == "number" and itemId > 0 then
+          history = purchasesByItemId[itemId]
+        end
+        if (history == nil or #history == 0) and item.name then
+          history = purchasesByNameLower[string.lower(item.name)]
+        end
+        item.purchaseHistory = history or {}
+        if #item.purchaseHistory > 0 then
+          item.lastPurchaseTime = item.purchaseHistory[#item.purchaseHistory].time
+        end
       else
         Journalator.Debug.Message("InvestONator: No spend found for", tostring(itemId), tostring(item.name))
       end
