@@ -769,19 +769,19 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
 
     local amountEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
     amountEditBox:SetPoint("TOPLEFT", amountLabel, "BOTTOMLEFT", 0, -5)
-    amountEditBox:SetSize(260, 30)
+    amountEditBox:SetSize(180, 30)
     amountEditBox:SetAutoFocus(false)
     amountEditBox:SetNumeric(true)
 
     -- Action buttons next to amount
     local addButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
     addButton:SetSize(100, 30)
-    addButton:SetPoint("LEFT", amountEditBox, "RIGHT", 10, 0)
+    addButton:SetPoint("LEFT", amountEditBox, "RIGHT", 8, 0)
     addButton:SetText(JOURNALATOR_L_ADD_ITEM or "Add")
 
     local cancelButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
     cancelButton:SetSize(100, 30)
-    cancelButton:SetPoint("LEFT", addButton, "RIGHT", 10, 0)
+    cancelButton:SetPoint("LEFT", addButton, "RIGHT", 8, 0)
     cancelButton:SetText(JOURNALATOR_L_CANCEL or "Cancel")
 
     -- Item input moved below amount/buttons
