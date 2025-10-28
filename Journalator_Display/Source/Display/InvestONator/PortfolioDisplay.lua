@@ -762,15 +762,38 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
 
     dialog.Title:SetText(JOURNALATOR_L_ADD_ITEM or "Add Item")
 
-    -- Item input
+    -- Amount input (moved above item input)
+    local amountLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    amountLabel:SetPoint("TOPLEFT", 20, -60)
+    amountLabel:SetText((JOURNALATOR_L_TARGET_AMOUNT or "Target Amount") .. " (gold)")
+
+    local amountEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
+    amountEditBox:SetPoint("TOPLEFT", amountLabel, "BOTTOMLEFT", 0, -5)
+    amountEditBox:SetSize(260, 30)
+    amountEditBox:SetAutoFocus(false)
+    amountEditBox:SetNumeric(true)
+
+    -- Action buttons next to amount
+    local addButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
+    addButton:SetSize(100, 30)
+    addButton:SetPoint("LEFT", amountEditBox, "RIGHT", 10, 0)
+    addButton:SetText(JOURNALATOR_L_ADD_ITEM or "Add")
+
+    local cancelButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
+    cancelButton:SetSize(100, 30)
+    cancelButton:SetPoint("LEFT", addButton, "RIGHT", 10, 0)
+    cancelButton:SetText(JOURNALATOR_L_CANCEL or "Cancel")
+
+    -- Item input moved below amount/buttons
     local itemLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    itemLabel:SetPoint("TOPLEFT", 20, -60)
+    itemLabel:SetPoint("TOPLEFT", amountEditBox, "BOTTOMLEFT", 0, -20)
     itemLabel:SetText(JOURNALATOR_L_ITEM_LINK_OR_ID)
 
     local itemEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
     itemEditBox:SetPoint("TOPLEFT", itemLabel, "BOTTOMLEFT", 0, -5)
-    itemEditBox:SetSize(360, 30)
+    itemEditBox:SetSize(360, 70)
     itemEditBox:SetAutoFocus(false)
+    itemEditBox:SetMultiLine(true)
 
     -- Suggestions list under the item box
     local suggestionsFrame = CreateFrame("Frame", nil, dialog)
@@ -829,35 +852,24 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
     itemEditBox:SetScript("OnTextChanged", function()
       dialog.SelectedItemId = nil
       dialog.SelectedItemName = nil
-      local query = itemEditBox:GetText()
-      local items = self:GetItemSuggestions(query, 10)
-      dialog:ShowSuggestions(items)
+      local query = itemEditBox:GetText() or ""
+      if string.find(query, "\n") or string.find(query, "\r") then
+        -- Multiline input: disable suggestions UI
+        suggestionsFrame:Hide()
+      else
+        local items = self:GetItemSuggestions(query, 10)
+        dialog:ShowSuggestions(items)
+      end
     end)
 
-    -- Amount input
-    local amountLabel = dialog:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    amountLabel:SetPoint("TOPLEFT", suggestionsFrame, "BOTTOMLEFT", 0, -10)
-    amountLabel:SetText((JOURNALATOR_L_TARGET_AMOUNT or "Target Amount") .. " (gold)")
-
-    local amountEditBox = CreateFrame("EditBox", nil, dialog, "InputBoxTemplate")
-    amountEditBox:SetPoint("TOPLEFT", amountLabel, "BOTTOMLEFT", 0, -5)
-    amountEditBox:SetSize(360, 30)
-    amountEditBox:SetAutoFocus(false)
-    amountEditBox:SetNumeric(true)
-
-    -- Add button
-    local addButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
-    addButton:SetSize(100, 30)
-    -- Place just below the amount field, not at dialog bottom, to avoid overlap
-    addButton:SetPoint("TOPRIGHT", amountEditBox, "BOTTOMRIGHT", 0, -10)
-    addButton:SetText(JOURNALATOR_L_ADD_ITEM or "Add")
+    -- hook add/cancel below
     addButton:SetScript("OnClick", function()
-      local itemArg = itemEditBox:GetText()
+      local text = itemEditBox:GetText() or ""
       local amountText = amountEditBox:GetText()
       local amountValue = Journalator.InvestONator.ParseGoldInput(amountText)
 
-      if not itemArg or itemArg == "" then
-        Journalator.Utilities.Message("Please enter an item link or numeric ID.")
+      if text == "" then
+        Journalator.Utilities.Message("Please enter one or more item names/links or numeric IDs.")
         return
       end
 
@@ -866,35 +878,43 @@ function JournalatorInvestONatorPortfolioDisplayMixin:ShowAddItemDialog(portfoli
         return
       end
 
-      local itemId = dialog.SelectedItemId
-      if not itemId and type(itemArg) == "string" then
-        itemId = tonumber(itemArg:match("|Hitem:(%d+):"))
-          or tonumber(itemArg:match("item:(%d+)"))
-          or tonumber(itemArg:match("^(%d+)$"))
+      local pid = self.ActivePortfolioId or portfolioId
+
+      local function addSingle(entryText)
+        local trimmed = tostring(entryText):match("^%s*(.-)%s*$")
+        if trimmed == "" then return false end
+        local id = tonumber(trimmed:match("|Hitem:(%d+):"))
+          or tonumber(trimmed:match("item:(%d+)"))
+          or tonumber(trimmed:match("^(%d+)$"))
+          or dialog.SelectedItemId
+        local name = dialog.SelectedItemName or (GetItemInfo and GetItemInfo(id or 0)) or (trimmed:match("%[(.-)%]")) or trimmed
+        return Journalator.InvestONator.AddItemToPortfolio(pid, id or 0, name, amountValue)
       end
 
-      if not itemId then
-        Journalator.Utilities.Message("Invalid item. Provide an item link or numeric item ID (e.g. 3575).")
-        return
+      local added = 0
+      if string.find(text, "\n") or string.find(text, "\r") then
+        for line in string.gmatch(text, "[^\r\n]+") do
+          if addSingle(line) then
+            added = added + 1
+          end
+        end
+      else
+        if addSingle(text) then
+          added = 1
+        end
       end
 
-      local resolvedName = dialog.SelectedItemName or (GetItemInfo and GetItemInfo(itemId)) or (itemArg:match("%[(.-)%]")) or tostring(itemArg)
-
-      if Journalator.InvestONator.AddItemToPortfolio(self.ActivePortfolioId or portfolioId, itemId, resolvedName, amountValue) then
+      if added > 0 then
         self:RefreshPortfolioList()
         dialog:Hide()
         itemEditBox:SetText("")
         amountEditBox:SetText("")
+        Journalator.Utilities.Message(string.format("Added %d item(s) to portfolio.", added))
       else
-        Journalator.Utilities.Message("Failed to add item to portfolio. Check your input.")
+        Journalator.Utilities.Message("No items were added. Check your input.")
       end
     end)
 
-    -- Cancel button
-    local cancelButton = CreateFrame("Button", nil, dialog, "UIPanelButtonTemplate")
-    cancelButton:SetSize(100, 30)
-    cancelButton:SetPoint("RIGHT", addButton, "LEFT", -10, 0)
-    cancelButton:SetText(JOURNALATOR_L_CANCEL or "Cancel")
     cancelButton:SetScript("OnClick", function()
       dialog:Hide()
       itemEditBox:SetText("")
