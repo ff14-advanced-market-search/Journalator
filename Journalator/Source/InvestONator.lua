@@ -85,7 +85,7 @@ function Journalator.InvestONator.RecalculateAllPurchases(fromTime)
       end
       local amount = inv.value or 0
       local count = (inv.count and inv.count > 0) and inv.count or 1
-      local unitPrice = math.floor(amount / count)
+      local unitPrice = inv.unitPrice or math.floor(amount / count)
 
       if itemId then
         spentByItemId[itemId] = (spentByItemId[itemId] or 0) + amount

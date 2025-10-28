@@ -10,7 +10,7 @@ end
 -- Calculate purchase statistics from purchase history
 local function CalculatePurchaseStats(purchaseHistory)
   if not purchaseHistory or #purchaseHistory == 0 then
-    return nil, nil, nil, nil
+    return nil, nil, nil, nil, 0, nil
   end
   
   local prices = {}
@@ -21,7 +21,7 @@ local function CalculatePurchaseStats(purchaseHistory)
   end
   
   if #prices == 0 then
-    return nil, nil, nil, nil
+    return nil, nil, nil, nil, 0, nil
   end
   
   table.sort(prices)
@@ -42,7 +42,8 @@ local function CalculatePurchaseStats(purchaseHistory)
     median = prices[mid + 1]
   end
   
-  return mean, median, min, max
+  local lastPrice = purchaseHistory[#purchaseHistory] and purchaseHistory[#purchaseHistory].price or nil
+  return mean, median, min, max, #prices, lastPrice
 end
 
 -- Create a very simple, cross-client dialog frame without relying on Blizzard
@@ -848,15 +849,16 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   end)
   
   -- Purchase statistics (aligned on far right)
-  local mean, median, min, max = CalculatePurchaseStats(item.purchaseHistory)
+  local mean, median, min, max, samples, lastPrice = CalculatePurchaseStats(item.purchaseHistory)
   if mean then
     local statsText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     statsText:SetPoint("RIGHT", frame, "RIGHT", -5, 0)
-    statsText:SetText(string.format("Mean: %s | Median: %s | Min: %s | Max: %s",
+    statsText:SetText(string.format("Mean: %s | Median: %s | Min: %s | Max: %s | Last: %s",
       FormatGoldDecimal(mean),
       FormatGoldDecimal(median),
       FormatGoldDecimal(min),
-      FormatGoldDecimal(max)
+      FormatGoldDecimal(max),
+      lastPrice and FormatGoldDecimal(lastPrice) or "-"
     ))
   end
   
