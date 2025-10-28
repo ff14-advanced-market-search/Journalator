@@ -530,11 +530,38 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
     StaticPopup_Show("JNR_EDIT_PORTFOLIO_TOTAL", nil, nil, { portfolioId = portfolioId, owner = self })
   end)
   
-  -- Items list with pagination
+  -- Items list with pagination and header
   local itemsFrame = CreateFrame("Frame", nil, frame)
   local itemsAnchor = progressText or header
   itemsFrame:SetPoint("TOPLEFT", itemsAnchor, "BOTTOMLEFT", 0, -10)
   itemsFrame:SetSize(frame:GetWidth() - 20, 100)
+
+  -- Column headers
+  local headerFrame = CreateFrame("Frame", nil, itemsFrame)
+  headerFrame:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, 0)
+  headerFrame:SetSize(itemsFrame:GetWidth(), 18)
+  headerFrame:SetHeight(18)
+
+  local itemNameHeader = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  itemNameHeader:SetPoint("LEFT", 5, 0)
+  itemNameHeader:SetText("Item Name")
+
+  -- Position the separator at the end of the names column (250px should fit longest item names)
+  local colSepY = headerFrame:CreateTexture(nil, "BACKGROUND")
+  colSepY:SetColorTexture(1, 1, 1, 0.1)
+  colSepY:SetWidth(1)
+  colSepY:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", 250, 0)
+  colSepY:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 250, 0)
+
+  local amountHeader = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+  amountHeader:SetPoint("LEFT", 260, 0)
+  amountHeader:SetText("Gold Spent / Goal (Gold Remaining)")
+
+  local headerUnderline = headerFrame:CreateTexture(nil, "BACKGROUND")
+  headerUnderline:SetColorTexture(1, 1, 1, 0.12)
+  headerUnderline:SetHeight(1)
+  headerUnderline:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 0, 0)
+  headerUnderline:SetPoint("BOTTOMRIGHT", headerFrame, "BOTTOMRIGHT", -4, 0)
 
   -- Build a sortable array of items, then sort alphabetically (case-insensitive)
   local sortedItems = {}
@@ -568,7 +595,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   local function acquireRow(index)
     if rows[index] then return rows[index] end
     local r = self:CreateItemFrame(0, { name = "", purchasedAmount = 0, targetAmount = 0, remainingAmount = 0 }, itemsFrame, portfolioId)
-    r:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -(index - 1) * rowHeight)
+    -- Offset rows down by header height
+    r:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -18 - (index - 1) * rowHeight)
     rows[index] = r
     return r
   end
@@ -593,7 +621,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
       for _, region in ipairs({ r:GetRegions() }) do region:Hide() end
       r:Hide()
       local filled = self:CreateItemFrame(entry.id, entry.item, itemsFrame, portfolioId)
-      filled:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -(rowIndex - 1) * rowHeight)
+      -- Offset rows down by header height
+      filled:SetPoint("TOPLEFT", itemsFrame, "TOPLEFT", 0, -18 - (rowIndex - 1) * rowHeight)
       rows[rowIndex] = filled
       filled:Show()
       rowIndex = rowIndex + 1
@@ -605,8 +634,8 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
       idx = idx + 1
     end
 
-    -- Resize container
-    itemsFrame:SetHeight(displayCount * rowHeight)
+    -- Resize container to include header
+    itemsFrame:SetHeight(18 + displayCount * rowHeight)
 
     -- Update page controls
     pageLabel:SetText(string.format("%d / %d", currentPage, totalPages))
@@ -698,6 +727,13 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
     FormatGoldDecimal(item.targetAmount),
     FormatGoldDecimal(item.remainingAmount)
   ))
+
+  -- Vertical separator to align with header (at end of names column)
+  local colSep = frame:CreateTexture(nil, "BACKGROUND")
+  colSep:SetColorTexture(1, 1, 1, 0.08)
+  colSep:SetWidth(1)
+  colSep:SetPoint("TOPLEFT", frame, "TOPLEFT", 250, 0)
+  colSep:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 250, 0)
 
   -- Subtle separator line to delineate rows
   local separator = frame:CreateTexture(nil, "BACKGROUND")
