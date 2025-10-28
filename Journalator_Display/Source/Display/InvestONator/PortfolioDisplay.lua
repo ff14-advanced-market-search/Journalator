@@ -7,6 +7,44 @@ local function FormatGoldDecimal(amount)
   return string.format("%.2fg", gold)
 end
 
+-- Calculate purchase statistics from purchase history
+local function CalculatePurchaseStats(purchaseHistory)
+  if not purchaseHistory or #purchaseHistory == 0 then
+    return nil, nil, nil, nil
+  end
+  
+  local prices = {}
+  for _, purchase in ipairs(purchaseHistory) do
+    if purchase.price and purchase.price > 0 then
+      table.insert(prices, purchase.price)
+    end
+  end
+  
+  if #prices == 0 then
+    return nil, nil, nil, nil
+  end
+  
+  table.sort(prices)
+  local min = prices[1]
+  local max = prices[#prices]
+  
+  local sum = 0
+  for _, price in ipairs(prices) do
+    sum = sum + price
+  end
+  local mean = sum / #prices
+  
+  local median
+  local mid = math.floor(#prices / 2)
+  if #prices % 2 == 0 then
+    median = (prices[mid] + prices[mid + 1]) / 2
+  else
+    median = prices[mid + 1]
+  end
+  
+  return mean, median, min, max
+end
+
 -- Create a very simple, cross-client dialog frame without relying on Blizzard
 -- templates that may not exist on all versions (e.g. DialogBoxFrameTemplate).
 local function CreateBasicDialog(parent, width, height)
@@ -546,15 +584,21 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   itemNameHeader:SetPoint("LEFT", 5, 0)
   itemNameHeader:SetText("Item Name")
 
-  -- Position the separator at the end of the names column (250px should fit longest item names)
+  -- Position the separators for columns: Names | Remove | Edit | Progress
   local colSepY = headerFrame:CreateTexture(nil, "BACKGROUND")
   colSepY:SetColorTexture(1, 1, 1, 0.1)
   colSepY:SetWidth(1)
   colSepY:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", 250, 0)
   colSepY:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 250, 0)
 
+  local colSepY2 = headerFrame:CreateTexture(nil, "BACKGROUND")
+  colSepY2:SetColorTexture(1, 1, 1, 0.1)
+  colSepY2:SetWidth(1)
+  colSepY2:SetPoint("TOPLEFT", headerFrame, "TOPLEFT", 380, 0)
+  colSepY2:SetPoint("BOTTOMLEFT", headerFrame, "BOTTOMLEFT", 380, 0)
+
   local amountHeader = headerFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  amountHeader:SetPoint("LEFT", 260, 0)
+  amountHeader:SetPoint("LEFT", 390, 0)
   amountHeader:SetText("Gold Spent / Goal (Gold Remaining)")
 
   local headerUnderline = headerFrame:CreateTexture(nil, "BACKGROUND")
@@ -710,17 +754,12 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   
   local itemName = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
   itemName:SetPoint("LEFT", 0, 0)
+  -- Constrain item name width to prevent overlap with buttons
+  itemName:SetWidth(220)
   itemName:SetText(item.name)
   
   local progressText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-  -- Reduce horizontal whitespace by constraining the effective row width
-  local desiredRowWidth = 560 -- names up to ~67 chars; bring amounts closer
-  local parentWidth = parent:GetWidth() or desiredRowWidth
-  local rightOffset = 0
-  if parentWidth > desiredRowWidth then
-    rightOffset = desiredRowWidth - parentWidth -- negative value shifts right anchor left
-  end
-  progressText:SetPoint("RIGHT", rightOffset, 0)
+  progressText:SetPoint("LEFT", 390, 0)
   progressText:SetText(string.format(
     "%s / %s (%s)",
     FormatGoldDecimal(item.purchasedAmount),
@@ -735,6 +774,13 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   colSep:SetPoint("TOPLEFT", frame, "TOPLEFT", 250, 0)
   colSep:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 250, 0)
 
+  -- Vertical separator after button columns (before progress)
+  local colSep2 = frame:CreateTexture(nil, "BACKGROUND")
+  colSep2:SetColorTexture(1, 1, 1, 0.08)
+  colSep2:SetWidth(1)
+  colSep2:SetPoint("TOPLEFT", frame, "TOPLEFT", 380, 0)
+  colSep2:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 380, 0)
+
   -- Subtle separator line to delineate rows
   local separator = frame:CreateTexture(nil, "BACKGROUND")
   separator:SetColorTexture(1, 1, 1, 0.06)
@@ -742,10 +788,10 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   separator:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
   separator:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 0)
 
-  -- Edit target button
+  -- Edit target button (fixed column)
   local editBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   editBtn:SetSize(60, 18)
-  editBtn:SetPoint("RIGHT", progressText, "LEFT", -8, 0)
+  editBtn:SetPoint("LEFT", frame, "LEFT", 320, 0)
   editBtn:SetText("Edit")
   editBtn:SetScript("OnClick", function()
     StaticPopupDialogs["JNR_EDIT_ITEM_TARGET"] = StaticPopupDialogs["JNR_EDIT_ITEM_TARGET"] or {
@@ -778,10 +824,10 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
     StaticPopup_Show("JNR_EDIT_ITEM_TARGET", nil, nil, { portfolioId = portfolioId, itemId = itemId, owner = ownerView })
   end)
 
-  -- Remove item button
+  -- Remove item button (fixed column)
   local removeBtn = CreateFrame("Button", nil, frame, "UIPanelButtonTemplate")
   removeBtn:SetSize(60, 18)
-  removeBtn:SetPoint("RIGHT", editBtn, "LEFT", -6, 0)
+  removeBtn:SetPoint("LEFT", frame, "LEFT", 260, 0)
   removeBtn:SetText("Remove")
   removeBtn:SetScript("OnClick", function()
     StaticPopupDialogs["JNR_DELETE_ITEM"] = StaticPopupDialogs["JNR_DELETE_ITEM"] or {
@@ -800,6 +846,19 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
     }
     StaticPopup_Show("JNR_DELETE_ITEM", nil, nil, { portfolioId = portfolioId, itemId = itemId, owner = ownerView })
   end)
+  
+  -- Purchase statistics (aligned on far right)
+  local mean, median, min, max = CalculatePurchaseStats(item.purchaseHistory)
+  if mean then
+    local statsText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    statsText:SetPoint("RIGHT", frame, "RIGHT", -5, 0)
+    statsText:SetText(string.format("Mean: %s | Median: %s | Min: %s | Max: %s",
+      FormatGoldDecimal(mean),
+      FormatGoldDecimal(median),
+      FormatGoldDecimal(min),
+      FormatGoldDecimal(max)
+    ))
+  end
   
   return frame
 end
