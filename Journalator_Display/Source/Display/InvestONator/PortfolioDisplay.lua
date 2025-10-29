@@ -827,6 +827,13 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
     FormatGoldDecimal(item.remainingAmount)
   ))
 
+  -- Goal reached indicator (check mark)
+  local goalCheck = frame:CreateTexture(nil, "ARTWORK")
+  goalCheck:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+  goalCheck:SetSize(16, 16)
+  goalCheck:SetPoint("LEFT", progressText, "RIGHT", 8, 0)
+  goalCheck:SetShown((item.remainingAmount or 0) <= 0)
+
   -- Vertical separator to align with header (at end of names column)
   local colSep = frame:CreateTexture(nil, "BACKGROUND")
   colSep:SetColorTexture(1, 1, 1, 0.08)
