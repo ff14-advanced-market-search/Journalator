@@ -677,12 +677,19 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreatePortfolioFrame(portf
   end
 
   exportButton:SetScript("OnClick", function()
+    local function formatEntry(name)
+      name = tostring(name or "")
+      -- Escape quotes in names
+      name = name:gsub('"', '\\"')
+      return string.format("\"%s\";;0;0;0;0;0;0;0;0;;#;;", name)
+    end
+
     local listName = portfolio.name or "Portfolio"
     local parts = { listName }
     -- Use full sorted item list
     for _, entry in ipairs(sortedItems) do
       if entry.item and entry.item.name then
-        table.insert(parts, entry.item.name)
+        table.insert(parts, formatEntry(entry.item.name))
       end
     end
     local exportText = table.concat(parts, "^")
