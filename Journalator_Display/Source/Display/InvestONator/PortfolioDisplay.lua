@@ -919,12 +919,11 @@ function JournalatorInvestONatorPortfolioDisplayMixin:CreateItemFrame(itemId, it
   if mean then
     local statsText = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     statsText:SetPoint("RIGHT", frame, "RIGHT", -5, 0)
-    statsText:SetText(string.format("Mean: %s | Median: %s | Min: %s | Max: %s | Last: %s",
+    statsText:SetText(string.format("Mean: %s | Median: %s | Min: %s | Max: %s",
       FormatGoldDecimal(mean),
       FormatGoldDecimal(median),
       FormatGoldDecimal(min),
-      FormatGoldDecimal(max),
-      lastPrice and FormatGoldDecimal(lastPrice) or "-"
+      FormatGoldDecimal(max)
     ))
   end
   
