@@ -1,0 +1,8 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/">
+  <Frame
+    name="JournalatorInvestONatorPortfolioDisplayTemplate"
+    virtual="true"
+    inherits="JournalatorDataTabDisplayTemplate"
+    mixin="JournalatorInvestONatorPortfolioDisplayMixin"
+  />
+</Ui>

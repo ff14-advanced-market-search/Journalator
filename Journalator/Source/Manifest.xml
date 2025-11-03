@@ -12,6 +12,7 @@
   <Script file="Debug.lua" />
   <Script file="Config.lua" />
   <Script file="SlashCmd.lua" />
+  <Script file="InvestONator.lua" />
 
   <Include file="Archiving\Manifest.xml" />
   <Include file="Monitor\Manifest.xml" />

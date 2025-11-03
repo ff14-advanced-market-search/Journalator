@@ -19,6 +19,7 @@
   <Script file="Trades.lua" />
   <Script file="TrainingCosts.lua" />
   <Script file="MissionTables.lua" />
+  <Script file="InvestONator.lua" />
 
   <Include file="AuctionMail.xml" />
   <Include file="AuctionPosting.xml" />
@@ -40,4 +41,5 @@
   <Include file="Trades.xml" />
   <Include file="TrainingCosts.xml" />
   <Include file="MissionTables.xml" />
+  <Include file="InvestONator.xml" />
 </Ui>

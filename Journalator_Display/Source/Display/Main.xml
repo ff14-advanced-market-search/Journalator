@@ -539,6 +539,38 @@
         </Anchors>
       </Frame>
 
+      <Frame parentKey="InvestONatorContainer" mixin="JournalatorTabbedViewMixin" parentArray="Views">
+        <Anchors>
+          <Anchor point="TOPLEFT"/>
+          <Anchor point="BOTTOMRIGHT" y="30"/>
+        </Anchors>
+        <Scripts>
+          <OnLoad method="OnLoad"/>
+          <OnShow method="OnShow"/>
+        </Scripts>
+        <KeyValues>
+          <KeyValue key="displayMode" value="InvestONator" type="string"/>
+        </KeyValues>
+        <Frames>
+          <Frame inherits="JournalatorInvestONatorPortfolioDisplayTemplate" parentArray="Views">
+            <KeyValues>
+              <KeyValue key="displayMode" value="Portfolios" type="string"/>
+            </KeyValues>
+            <Anchors>
+              <Anchor point="TOPLEFT" relativeKey="$parent" relativePoint="TOPLEFT" x="20" y="-50"/>
+              <Anchor point="BOTTOMRIGHT" relativeKey="$parent" relativePoint="BOTTOMRIGHT" x="-20" y="20"/>
+            </Anchors>
+          </Frame>
+
+          <Button parentKey="PortfoliosTab" inherits="JournalatorTabButtonTemplate" name="JournalatorInvestONatorPortfoliosTab_Button" text="JOURNALATOR_L_PORTFOLIOS">
+            <KeyValues>
+              <KeyValue key="displayMode" value="Portfolios" type="string"/>
+              <KeyValue key="title" value="JOURNALATOR_L_INVEST_O_NATOR_TITLE" type="global"/>
+            </KeyValues>
+          </Button>
+        </Frames>
+      </Frame>
+
 			<Button parentKey="SummaryTab" inherits="JournalatorTabButtonTemplate" name="JournalatorSummaryTab_Button" text="JOURNALATOR_L_SUMMARY">
 				<KeyValues>
 					<KeyValue key="displayMode" value="Summary" type="string"/>
@@ -591,6 +623,12 @@
         <KeyValues>
           <KeyValue key="displayMode" value="Info" type="string"/>
           <KeyValue key="title" value="JOURNALATOR_L_INFO_TITLE" type="global"/>
+        </KeyValues>
+      </Button>
+      <Button parentKey="InvestONatorTab" inherits="JournalatorTabButtonTemplate" name="JournalatorInvestONatorTab_Button" text="JOURNALATOR_L_INVEST_O_NATOR">
+        <KeyValues>
+          <KeyValue key="displayMode" value="InvestONator" type="string"/>
+          <KeyValue key="title" value="JOURNALATOR_L_INVEST_O_NATOR_TITLE" type="global"/>
         </KeyValues>
       </Button>
 

@@ -48,6 +48,8 @@ function Journalator.SlashCmd.Config(optionName, value1, ...)
   Journalator.Utilities.Message("Now set " .. optionName .. ": " .. tostring(Journalator.Config.Get(optionName)))
 end
 
+-- Toggles the DEBUG configuration option and notifies the user.
+-- When debug is enabled, sends "Debug mode on"; when disabled, sends "Debug mode off".
 function Journalator.SlashCmd.Debug(...)
   Journalator.Config.Set(Journalator.Config.Options.DEBUG, not Journalator.Config.Get(Journalator.Config.Options.DEBUG))
   if Journalator.Config.Get(Journalator.Config.Options.DEBUG) then
@@ -57,12 +59,141 @@ function Journalator.SlashCmd.Debug(...)
   end
 end
 
+---Handle Invest-O-Nator slash commands
+---Supports create, add, and list subcommands
+-- Handles Invest-O-Nator slash subcommands: `create`, `add`, `list`, and prints usage help.
+-- @param ... Command arguments where the first argument is the subcommand:
+--   - "create", name, investment: create a new portfolio named `name` with `investment` (gold format like `100g`, `10000s`, `1000000c`, or plain number).
+--   - "add", portfolioId, itemName, amount: add an item with `itemName` and target `amount` to the portfolio identified by `portfolioId`.
+--   - "list": list all portfolios with their spent/target and completion percentage.
+-- Unrecognized subcommands cause the function to emit the invest usage/help messages.
+function Journalator.SlashCmd.InvestONator(...)
+  local command = select(1, ...)
+
+  if command == "create" then
+    local name = select(2, ...)
+    local investment = select(3, ...)
+    
+    if not name or not investment then
+      Journalator.Utilities.Message("Usage: /jnr invest create <name> <investment>")
+      Journalator.Utilities.Message("Example: /jnr invest create \"Materials\" 3000000")
+      Journalator.Utilities.Message("Gold formats: 100g, 10000s, 1000000c, or plain numbers")
+      return
+    end
+
+    local investmentAmount = Journalator.InvestONator.ParseGoldInput(investment)
+    if investmentAmount <= 0 then
+      Journalator.Utilities.Message("Invalid investment amount. Use formats like 100g, 10000s, or 1000000c")
+      return
+    end
+
+    local portfolioId = Journalator.InvestONator.CreatePortfolio(name, investmentAmount)
+    if portfolioId then
+      local formattedAmount = Journalator.InvestONator.FormatGold(investmentAmount)
+      Journalator.Utilities.Message("Created portfolio '" .. name .. "' with " .. formattedAmount .. " investment")
+    else
+      Journalator.Utilities.Message("Failed to create portfolio. Check your input.")
+    end
+    
+  elseif command == "add" then
+    local portfolioId = tonumber(select(2, ...))
+    local itemArg = select(3, ...)
+    local amount = select(4, ...)
+
+    if not portfolioId or not itemArg or not amount then
+      Journalator.Utilities.Message("Usage: /jnr invest add <portfolioId> <itemLink|itemID> <amount>")
+      Journalator.Utilities.Message("Example: /jnr invest add 1 3575 100000 (3575=Iron Bar)")
+      Journalator.Utilities.Message("Tip: Shift-click an item to paste its link.")
+      return
+    end
+
+    local amountValue = Journalator.InvestONator.ParseGoldInput(amount)
+    if amountValue <= 0 then
+      Journalator.Utilities.Message("Invalid amount. Use formats like 100g, 10000s, or 1000000c")
+      return
+    end
+
+    -- Check if portfolio exists
+    if not Journalator.InvestONator.GetPortfolio(portfolioId) then
+      local message = "Portfolio " .. portfolioId .. " not found. Use '/jnr invest list' to see available portfolios."
+      Journalator.Utilities.Message(message)
+      return
+    end
+
+    -- Extract item ID from link, item string, or numeric ID
+    local itemId
+    if type(itemArg) == "string" then
+      itemId = tonumber(itemArg:match("|Hitem:(%d+):"))
+        or tonumber(itemArg:match("item:(%d+)"))
+        or tonumber(itemArg:match("^(%d+)$"))
+    elseif type(itemArg) == "number" then
+      itemId = itemArg
+    end
+
+    if not itemId then
+      Journalator.Utilities.Message("Invalid item. Provide an item link or numeric item ID (e.g. 3575).")
+      return
+    end
+
+    local resolvedName = itemArg
+    if type(itemArg) == "string" then
+      local itemName = GetItemInfo and GetItemInfo(itemId)
+      if itemName then
+        resolvedName = itemName
+      else
+        resolvedName = itemArg:match("%[(.-)%]") or "Item " .. itemId
+      end
+    end
+
+    if Journalator.InvestONator.AddItemToPortfolio(portfolioId, itemId, resolvedName, amountValue) then
+      local formattedAmount = Journalator.InvestONator.FormatGold(amountValue)
+      Journalator.Utilities.Message("Added " .. resolvedName .. " with " .. formattedAmount .. " target to portfolio")
+    else
+      Journalator.Utilities.Message("Failed to add item to portfolio. Check your input.")
+    end
+    
+  elseif command == "list" then
+    local portfolios = Journalator.InvestONator.GetAllPortfolios()
+    if next(portfolios) == nil then
+      Journalator.Utilities.Message("No portfolios found")
+      return
+    end
+
+    Journalator.Utilities.Message("Portfolios:")
+    for portfolioId, portfolio in pairs(portfolios) do
+      local progress = Journalator.InvestONator.GetPortfolioProgress(portfolioId)
+      local spentFormatted = Journalator.InvestONator.FormatGold(progress.totalSpent)
+      local targetFormatted = Journalator.InvestONator.FormatGold(progress.totalTarget)
+      local completionPercent = math.floor(progress.completionPercentage)
+      Journalator.Utilities.Message(string.format(
+        "%d. %s - %s / %s (%d%%)",
+        portfolioId,
+        portfolio.name,
+        spentFormatted,
+        targetFormatted,
+        completionPercent
+      ))
+    end
+    
+  else
+    Journalator.Utilities.Message("Invest-o-nator commands:")
+    Journalator.Utilities.Message("/jnr invest create <name> <investment> - Create a new portfolio")
+    Journalator.Utilities.Message("/jnr invest add <portfolioId> <itemName> <amount> - Add item to portfolio")
+    Journalator.Utilities.Message("/jnr invest list - List all portfolios")
+  end
+end
+
 local COMMANDS = {
   ["c"] = Journalator.SlashCmd.Config,
   ["config"] = Journalator.SlashCmd.Config,
   ["d"] = Journalator.SlashCmd.Debug,
   ["debug"] = Journalator.SlashCmd.Debug,
+  ["invest"] = Journalator.SlashCmd.InvestONator,
 }
+-- Handles top-level slash command input for the Journalator addon.
+-- Dispatches the first token as a subcommand, passing remaining tokens as arguments.
+-- If `input` is empty, toggles the Journalator view if available or shows a disabled message.
+-- @param input The raw command string provided after the slash command (may be empty).
 function Journalator.SlashCmd.Handler(input)
   if input == "" then
     if Journalator.ToggleView then

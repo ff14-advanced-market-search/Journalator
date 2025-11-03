@@ -8,7 +8,7 @@
 ## Category: Economy
 ## Author: plusmouse
 ## OptionalDeps: Auctionator
-## SavedVariables: JOURNALATOR_CONFIG, JOURNALATOR_LOGS, JOURNALATOR_ARCHIVE, JOURNALATOR_ARCHIVE_TIMES
+## SavedVariables: JOURNALATOR_CONFIG, JOURNALATOR_LOGS, JOURNALATOR_ARCHIVE, JOURNALATOR_ARCHIVE_TIMES, JOURNALATOR_INVEST_O_NATOR_DATA
 ## IconTexture: Interface/AddOns/Journalator/Images/icon
 ## Category-enUS: Auctions
 ## Category-deDE: Auktionen

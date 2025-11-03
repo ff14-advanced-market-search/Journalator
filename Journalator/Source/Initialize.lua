@@ -1,3 +1,19 @@
+-- Creates and configures monitoring frames according to user configuration and game edition.
+-- 
+-- For each enabled monitor option this function instantiates the corresponding monitor frame(s):
+-- - Auction House: auction mail and posting monitors.
+-- - Vendoring: vendor items, vendor repairs, taxis, and training costs monitors.
+-- - Crafting Orders: crafting order placing, fulfilling, and mail monitors (only on non-Classic).
+-- - Questing: reputation monitor and either the Classic or Mainline quests monitor; links the quests monitor to the reputation monitor.
+-- - Trading Post: trading post monitor (only on non-Classic).
+-- - Looting: loot containers monitor and, on non-Classic, right-click-to-open monitor.
+-- - WoW Tokens: WoW Tokens monitor if commerce status is available.
+-- - Basic Mail: basic mail send and receive monitors.
+-- - Trades: trades monitor.
+-- - Mission Tables: mission tables monitor (only on non-Classic).
+-- - Invest-O-Nator: Invest-O-Nator monitor.
+-- 
+-- If a monitor option is disabled, a debug message is emitted indicating that the specific monitoring category is disabled.
 local function SetupMonitors()
   if Journalator.Config.Get(Journalator.Config.Options.MONITOR_AUCTION_HOUSE) then
     CreateFrame("Frame", "JNRAuctionMailMonitor", nil, "JournalatorAuctionMailMonitorTemplate")
@@ -82,12 +98,22 @@ local function SetupMonitors()
   else
     Journalator.Debug.Message("mission tables monitor disabled")
   end
+
+  if Journalator.Config.Get(Journalator.Config.Options.MONITOR_INVEST_O_NATOR) then
+    CreateFrame("Frame", "JNRInvestONatorMonitor", nil, "JournalatorInvestONatorMonitorTemplate")
+  else
+    Journalator.Debug.Message("invest-o-nator monitor disabled")
+  end
 end
 
+-- Initialize core Journalator subsystems and runtime state on add-on load.
+-- Initializes configuration data, the archiving subsystem, and the Invest-O-Nator subsystem;
+-- retrieves and stores the add-on version in Journalator.State.CurrentVersion; and initializes slash commands.
 local function InitializeBase()
   Journalator.Config.InitializeData()
 
   Journalator.Archiving.Initialize()
+  Journalator.InvestONator.Initialize()
 
   local GetAddOnMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
   Journalator.State.CurrentVersion = GetAddOnMetadata("Journalator", "Version")
